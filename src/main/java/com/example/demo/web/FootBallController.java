@@ -29,16 +29,16 @@ import static com.example.demo.util.HttpClientUtil.METHOD_POST;
 @Controller
 @RequestMapping("/api")
 public class FootBallController {
-    private static String url = "https://webapi.sporttery.cn/gateway/jc/fb/getMatchDataPageListV1.qry?method=concern";
-    private static String url2 = "https://webapi.sporttery.cn/gateway/jc/football/getFixedBonusV1.qry?clientCode=3001&matchId=";
+    private static String url = "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?method=concern";
+    private static String url2 = "https://webapi.sporttery.cn/gateway/uniform/football/getFixedBonusV1.qry?clientCode=3001&matchId=";
 
-    private static String url3 = "https://webapi.sporttery.cn/gateway/jc/football/searchOddsV1.qry?channel=c&type=&single=0&h=%s&a=%s&d=%s";
+    private static String url3 = "https://webapi.sporttery.cn/gateway/uniform/football/searchOddsV1.qry?channel=c&type=&single=0&h=%s&a=%s&d=%s";
 
     private static String url4 = "https://open.feishu.cn/open-apis/bot/v2/hook/a553e701-25e0-4e58-ad26-920fde4c2631";
 
     // 同主客历史交锋
     private static String url5 = "https://webapi.sporttery.cn/gateway/uniform/football/getResultHistoryV1.qry?" +
-            "sportteryMatchId=%s&termLimits=2&tournamentFlag=0&homeAwayFlag=1";
+            "sportteryMatchId=%s&termLimits=2&tournamentFlag=0&homeAwayFlag=0";
 
     public static ExecutorService executorService = Executors.newSingleThreadExecutor();
 
@@ -46,7 +46,7 @@ public class FootBallController {
             fixedDelayString = "${schedule.repeatInterval:14400000}")
     public void load() {
         log.info("定时任务启动----");
-        sendMatchInfo("0");
+        sendMatchInfo("ai");
     }
 
     @RequestMapping("/match/info/send/{aiInfo}")
@@ -146,6 +146,8 @@ public class FootBallController {
             list.add(map2);
             map1.put("list", list);
             result.add(map1);
+        }else{
+            result.add(map1);
         }
     }
 
@@ -170,24 +172,53 @@ public class FootBallController {
     }
 
 
-    public static String talkToOpenAi(String msg) {
+    public static String analyzeMatchWithAI(String homeTeam, String awayTeam, String matchData) {
         String url = "https://api.chatanywhere.tech/v1/chat/completions";
-        // 构建请求体
+
+        // 专业的系统提示词
+        String systemPrompt = "你是一位专业的足球比赛分析师，擅长基于赔率数据、历史交锋记录和相同赔率下的历史比赛结果进行综合分析。请用专业、客观的态度进行分析，给出有理有据的比分预测。";
+
+        // 结构化的用户提示词
+        String userPrompt = String.format(
+                "请对 %s vs %s 这场比赛进行专业分析。\n\n" +
+                        "以下是相关数据：\n%s\n\n" +
+                        "请从以下维度进行综合分析：\n" +
+                        "1. **赔率分析**：解读当前赔率反映的市场预期和胜负概率分布\n" +
+                        "2. **基本面分析**：基于历史交锋记录分析两队战术风格、心理优势和近期状态\n" +
+                        "3. **历史规律**：参考相同赔率下的历史比赛结果，寻找统计规律\n" +
+                        "4. **进球预期**：结合两队攻防特点预测可能的进球数范围\n" +
+                        "5. **风险提示**：指出可能影响比赛结果的关键因素和不确定性\n\n" +
+                        "请给出：\n" +
+                        "- 2-3个最可能的比分预测（按概率从高到低排列）\n" +
+                        "- 每个比分预测的简要理由\n" +
+                        "- 总体比赛走势判断（如：主队占优、势均力敌、客队反客为主等）",
+                homeTeam, awayTeam, matchData
+        );
+
         Map<String, Object> data = new HashMap<>();
         data.put("model", "gpt-3.5-turbo");
-        data.put("temperature", 0.7);
+        data.put("temperature", 0.7); // 适中的创造性，保持分析的专业性
+
         List<Map<String, String>> messages = new ArrayList<>();
-        // 添加用户消息
-        String message = msg + " 根据主队客队最新赔率和主队客队近期交锋比分以及相同赔率下其他比赛的历史比分,给出推荐比分";
+
+        // 系统角色设定
+        Map<String, String> systemMsg = new HashMap<>();
+        systemMsg.put("role", "system");
+        systemMsg.put("content", systemPrompt);
+        messages.add(systemMsg);
+
+        // 用户分析请求
         Map<String, String> userMsg = new HashMap<>();
         userMsg.put("role", "user");
-        userMsg.put("content", message);
-
+        userMsg.put("content", userPrompt);
         messages.add(userMsg);
+
         data.put("messages", messages);
+
         Map<String, String> header = new HashMap<>();
         header.put("Content-Type", "application/json");
-        header.put("Authorization", "Bearer ");
+        header.put("Authorization", "Bearer sk-9CKemVLLZ3tXORzRzANPBHRFJcPfuBECHuPppVajz7OyS9B1");
+
         String response = HttpClientUtil.getHttpContent(url, METHOD_POST, JSONObject.toJSONString(data), header, 20000);
         ChatCompletion chatCompletion = JSONObject.parseObject(response, ChatCompletion.class);
         return chatCompletion.getChoices().get(0).getMessage().getContent();
@@ -219,11 +250,14 @@ public class FootBallController {
         messageBuilder.append("          \"tag\": \"lark_md\",\n");
         messageBuilder.append("          \"content\": \"");
 
-        // 构建表格数据
         for (int i = 0; i < result.size(); i++) {
 
             Map<String, Object> re = result.get(i);
             StringBuilder sb = new StringBuilder();
+            String leagueType = (String) re.get("联赛类型：");
+            String matchTime = (String) re.get("比赛时间:");
+            String homeTeam = (String) re.get("主队");
+            String awayTeam = (String) re.get("客队");
             sb.append("-----------分隔------------");
             sb.append("\\n当前时间：").append(formattedDateTime);
             sb.append("\\n联赛类型：").append(re.get("联赛类型："));
@@ -237,20 +271,23 @@ public class FootBallController {
             }
 
             List<Map<String, Object>> list = (List<Map<String, Object>>) re.get("list");
-            for (int j = 0; j < list.size(); j++) {
-                Map<String, Object> l = list.get(j);
-                sb.append("\\n最新赔率：").append("主" + l.get("主胜")).append(" 平" + l.get("平")).append(" 客:" + l.get("客胜"));
-                List<Map<String, Object>> list2 = (List<Map<String, Object>>) l.get("list2");
-                if (!CollectionUtils.isEmpty(list2)) {
-                    for (Map<String, Object> l2 : list2) {
-                        sb.append("\\n历史联赛：").append(l2.get("历史联赛类型:"));
-                        sb.append("\\n历史主队: ").append(l2.get("历史主队")).append(" vs 历史客队：").append(l2.get("历史客队")).append(" \\n历史比分：").append(l2.get("历史比分主：客"));
+            if(!CollectionUtils.isEmpty(list)){
+                for (int j = 0; j < list.size(); j++) {
+                    Map<String, Object> l = list.get(j);
+                    sb.append("\\n最新赔率：").append("主" + l.get("主胜")).append(" 平" + l.get("平")).append(" 客:" + l.get("客胜"));
+                    List<Map<String, Object>> list2 = (List<Map<String, Object>>) l.get("list2");
+                    if (!CollectionUtils.isEmpty(list2)) {
+                        for (Map<String, Object> l2 : list2) {
+                            sb.append("\\n历史联赛：").append(l2.get("历史联赛类型:"));
+                            sb.append("\\n历史主队: ").append(l2.get("历史主队")).append(" vs 历史客队：").append(l2.get("历史客队")).append(" \\n历史比分：").append(l2.get("历史比分主：客"));
+                        }
                     }
                 }
             }
+
             try {
                 if ("ai".equals(aiInfo)) {
-                    String s = talkToOpenAi(sb.toString());
+                    String s = analyzeMatchWithAI(homeTeam, awayTeam, sb.toString());
                     if (s.contains("\n")) {
                         s = s.replaceAll("\\n", " ");
                     }
@@ -275,7 +312,7 @@ public class FootBallController {
     }
 
     public static void main(String[] args) {
-        sendMatchInfo("0");
+        sendMatchInfo("ai");
     }
 
 
