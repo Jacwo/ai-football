@@ -1,113 +1,41 @@
 package com.example.demo.util;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.*;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
-import java.net.URL;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 
-/**
- * @Author:yangyuanliang
- * @Date:2020/3/30 10:42
- * @Description:由于restTemplate可能存在bug，使用原生httpClient
- */
 @Slf4j
 public class HttpClientUtil {
 
-    public static final String METHOD_POST = "POST";
     public static final String METHOD_GET = "GET";
+    public static final String METHOD_POST = "POST";
+    public static final String METHOD_PUT = "PUT";
+    public static final String METHOD_DELETE = "DELETE";
 
-    public static String getHttpContent(String url, String method, String postData, Map<String, String> header, int timeout) {
-        return getHttpContent(url, method, postData, header, timeout, timeout);
+    private static final CloseableHttpClient httpClient;
+
+    static {
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectTimeout(30000)
+                .setSocketTimeout(30000)
+                .setConnectionRequestTimeout(30000)
+                .build();
+
+        httpClient = HttpClients.custom()
+                .setDefaultRequestConfig(requestConfig)
+                .build();
     }
 
-    public static String getHttpContent(
-            String url, String method,
-            String postData, Map<String, String> header,
-            int connectTimeout, int readTimeout) {
-
-        BufferedReader reader = null;
-        InputStreamReader inputStreamReader=null;
-        try {
-            if (StringUtils.isBlank(url)) {
-                throw new IllegalArgumentException("url cannot be null");
-            }
-            if (!METHOD_POST.equalsIgnoreCase(method) && !METHOD_GET.equalsIgnoreCase(method)) {
-                throw new IllegalArgumentException("method must be one of Post or Get");
-            }
-            URL address = new URL(url);
-
-           /* Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("127.0.0.1", 10809));
-            HttpURLConnection conn = (HttpURLConnection)address.openConnection(proxy);*/
-
-            HttpURLConnection conn = (HttpURLConnection) address.openConnection();
-            conn.setAllowUserInteraction(false);
-            conn.setDoOutput(true);
-            conn.setConnectTimeout(connectTimeout);
-            conn.setReadTimeout(readTimeout);
-            conn.setRequestMethod(method);
-            Map<String, String> defaultHeader = new HashMap<>(6);
-
-            if (header != null && !header.isEmpty()) {
-                Set<String> key = header.keySet();
-                for (Iterator<String> it = key.iterator(); it.hasNext(); ) {
-                    String s = it.next();
-                    defaultHeader.put(s, header.get(s));
-                }
-            }
-            Set<String> key = defaultHeader.keySet();
-            for (Iterator<String> it = key.iterator(); it.hasNext(); ) {
-                String s = it.next();
-                conn.addRequestProperty(s, defaultHeader.get(s));
-            }
-            if (METHOD_POST.equalsIgnoreCase(method)) {
-                postData = StringUtils.trimToEmpty(postData);
-                conn.getOutputStream().write(postData.getBytes("UTF-8"));
-                conn.getOutputStream().flush();
-                conn.getOutputStream().close();
-            }
-            inputStreamReader = new InputStreamReader(conn.getInputStream(), "UTF-8");
-            reader = new BufferedReader(inputStreamReader);
-            StringBuffer sb = new StringBuffer();
-            String inputLine;
-            while ((inputLine = reader.readLine()) != null) {
-                sb.append(inputLine).append("\n");
-            }
-            return sb.toString();
-        } catch (IOException e) {
-             log.error("http IOE Exception",e);
-            throw new RuntimeException(e.getMessage(), e);
-        } catch (RuntimeException e) {
-            log.error("http RuntimeException",e);
-            throw e;
-        } finally {
-            if(inputStreamReader!=null){
-                try {
-                    inputStreamReader.close();
-                } catch (IOException e) {
-                    log.error("http IOE Exception",e);
-                }
-            }
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (IOException e) {
-                    log.error("http IOE Exception",e);
-                }
-            }
-        }
-    }
-
-    public static String doGet(String url, int timeout) {
+    public static String doGet(String url, int timeout) throws IOException {
         Map<String,String> header=new HashMap<>();
         header.put("origin", "https://m.sporttery.cn");
         header.put("accept", "application/json, text/plain, */*");
@@ -121,14 +49,69 @@ public class HttpClientUtil {
         header.put("sec-fetch-mode", "cors");
         header.put("sec-fetch-site", "same-site");
         header.put("user-agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1");
+
         return getHttpContent(url, METHOD_GET, null, header, timeout);
     }
 
-    public static String doPost(String url, String postData, int timeout) {
-        Map<String,String> header=new HashMap<>();
-        header.put("Content-Type","application\\/json");
-        return getHttpContent(url, METHOD_POST, postData, header, timeout);
+    public static String doPost(String url, String body, int timeout) throws IOException {
+        return getHttpContent(url, METHOD_POST, body, null, timeout);
     }
 
+    public static String getHttpContent(String url, String method, String body,
+                                        Map<String, String> headers, int timeout) throws IOException {
 
+        HttpRequestBase request = createRequest(url, method, body);
+
+        // 设置超时
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectTimeout(timeout)
+                .setSocketTimeout(timeout)
+                .build();
+        request.setConfig(requestConfig);
+
+        // 设置请求头
+        if (headers != null) {
+            headers.forEach(request::addHeader);
+        }
+
+        try (CloseableHttpResponse response = httpClient.execute(request)) {
+            HttpEntity entity = response.getEntity();
+            String result = EntityUtils.toString(entity, "UTF-8");
+            EntityUtils.consume(entity);
+
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode >= 200 && statusCode < 300) {
+                return result;
+            } else {
+                throw new IOException("HTTP请求失败，状态码: " + statusCode + ", 响应: " + result);
+            }
+        }
+    }
+
+    private static HttpRequestBase createRequest(String url, String method, String body) {
+        switch (method.toUpperCase()) {
+            case METHOD_POST:
+                HttpPost post = new HttpPost(url);
+                if (body != null) {
+                    post.setEntity(new StringEntity(body, "UTF-8"));
+                    post.setHeader("Content-Type", "application/json");
+                }
+                return post;
+
+            case METHOD_PUT:
+                HttpPut put = new HttpPut(url);
+                if (body != null) {
+                    put.setEntity(new StringEntity(body, "UTF-8"));
+                    put.setHeader("Content-Type", "application/json");
+                }
+                return put;
+
+            case METHOD_DELETE:
+                return new HttpDelete(url);
+
+            case METHOD_GET:
+            default:
+                return new HttpGet(url);
+        }
+    }
 }

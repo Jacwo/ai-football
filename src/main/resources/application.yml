@@ -11,3 +11,25 @@ langchain4j:
       log-requests: true
       log-responses: true
       base-url: https://api.deepseek.com
+
+football:
+  api:
+    # 彩票API
+    match-list-url: "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?method=concern"
+    fixed-bonus-url: "https://webapi.sporttery.cn/gateway/uniform/football/getFixedBonusV1.qry?clientCode=3001&matchId="
+    search-odds-url: "https://webapi.sporttery.cn/gateway/uniform/football/searchOddsV1.qry?channel=c&type=&single=0&h=%s&a=%s&d=%s"
+    result-history-url: "https://webapi.sporttery.cn/gateway/uniform/football/getResultHistoryV1.qry?sportteryMatchId=%s&termLimits=2&tournamentFlag=0&homeAwayFlag=0"
+    # 飞书Webhook
+    feishu-webhook-url: "https://open.feishu.cn/open-apis/bot/v2/hook/a553e701-25e0-4e58-ad26-920fde4c2631"
+spring:
+  jackson:
+    date-format: "yyyy-MM-dd HH:mm:ss"
+    time-zone: "GMT+8"
+  application:
+    name: football-analysis-service
+
+logging:
+  level:
+    com.example.demo: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
