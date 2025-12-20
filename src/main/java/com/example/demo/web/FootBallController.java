@@ -173,10 +173,10 @@ public class FootBallController {
 
 
     public static String analyzeMatchWithAI(String homeTeam, String awayTeam, String matchData) {
-        String url = "https://api.chatanywhere.tech/v1/chat/completions";
+        String url = "https://api.deepseek.com/chat/completions";
 
         // 专业的系统提示词
-        String systemPrompt = "你是一位专业的足球比赛分析师，擅长基于赔率数据、历史交锋记录和相同赔率下的历史比赛结果进行综合分析。请用专业、客观的态度进行分析，给出有理有据的比分预测。";
+        String systemPrompt = "你是一位专业的足球比赛分析师，擅长基于赔率数据、历史交锋记录结果进行综合分析。请用专业、客观的态度进行分析，给出有理有据的比分预测。";
 
         // 结构化的用户提示词
         String userPrompt = String.format(
@@ -185,16 +185,15 @@ public class FootBallController {
                         "请从以下维度进行综合分析：\n" +
                         "1. **赔率分析**：解读当前赔率反映的市场预期和胜负概率分布\n" +
                         "2. **基本面分析**：基于历史交锋记录分析两队战术风格、心理优势和近期状态\n" +
-                        "3. **历史规律**：参考相同赔率下的历史比赛结果，寻找统计规律\n" +
-                        "4. **进球预期**：结合两队攻防特点预测可能的进球数范围\n" +
+                        "3. **进球预期**：结合两队攻防特点预测可能的进球数范围\n" +
                         "请给出：\n" +
-                        "1个最可能的比分预测\n" ,
+                        "2个最可能的比分预测\n" ,
                 homeTeam, awayTeam, matchData
         );
 
         Map<String, Object> data = new HashMap<>();
-        data.put("model", "gpt-3.5-turbo");
-        data.put("temperature", 0.7); // 适中的创造性，保持分析的专业性
+        data.put("model", "deepseek-chat");
+        data.put("stream", false);
 
         List<Map<String, String>> messages = new ArrayList<>();
 
@@ -207,6 +206,7 @@ public class FootBallController {
         // 用户分析请求
         Map<String, String> userMsg = new HashMap<>();
         userMsg.put("role", "user");
+        System.out.println(userPrompt);
         userMsg.put("content", userPrompt);
         messages.add(userMsg);
 
@@ -214,9 +214,10 @@ public class FootBallController {
 
         Map<String, String> header = new HashMap<>();
         header.put("Content-Type", "application/json");
-        header.put("Authorization", "Bearer sk-9CKemVLLZ3tXORzRzANPBHRFJcPfuBECHuPppVajz7OyS9B1");
+       //header.put("Authorization", "Bearer sk-9CKemVLLZ3tXORzRzANPBHRFJcPfuBECHuPppVajz7OyS9B1");
+        header.put("Authorization", "Bearer sk-2e0ca2fdd7c6405da77d081748210f1e");
 
-        String response = HttpClientUtil.getHttpContent(url, METHOD_POST, JSONObject.toJSONString(data), header, 20000);
+        String response = HttpClientUtil.getHttpContent(url, METHOD_POST, JSONObject.toJSONString(data), header, 50000);
         ChatCompletion chatCompletion = JSONObject.parseObject(response, ChatCompletion.class);
         return chatCompletion.getChoices().get(0).getMessage().getContent();
     }
@@ -309,7 +310,7 @@ public class FootBallController {
     }
 
     public static void main(String[] args) {
-        sendMatchInfo("");
+        sendMatchInfo("ai");
     }
 
 
