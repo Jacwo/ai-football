@@ -108,7 +108,20 @@ public class HttpClientUtil {
     }
 
     public static String doGet(String url, int timeout) {
-        return getHttpContent(url, METHOD_GET, null, null, timeout);
+        Map<String,String> header=new HashMap<>();
+        header.put("origin", "https://m.sporttery.cn");
+        header.put("accept", "application/json, text/plain, */*");
+        header.put("accept-language", "zh-CN,zh;q=0.9");
+        header.put("cache-control", "no-cache");
+        header.put("dnt", "1");
+        header.put("pragma", "no-cache");
+        header.put("priority", "u=1, i");
+        header.put("referer", "https://m.sporttery.cn/");
+        header.put("sec-fetch-dest", "empty");
+        header.put("sec-fetch-mode", "cors");
+        header.put("sec-fetch-site", "same-site");
+        header.put("user-agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1");
+        return getHttpContent(url, METHOD_GET, null, header, timeout);
     }
 
     public static String doPost(String url, String postData, int timeout) {
@@ -116,4 +129,6 @@ public class HttpClientUtil {
         header.put("Content-Type","application\\/json");
         return getHttpContent(url, METHOD_POST, postData, header, timeout);
     }
+
+
 }
