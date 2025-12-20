@@ -44,14 +44,9 @@ public class FootballAnalysisService {
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
-    public List<MatchAnalysis> analyzeMatches(String aiInfo, List<MatchInfo> matchInfoList) {
+    public List<MatchAnalysis> analyzeMatches(String aiInfo, List<SubMatchInfo> validMatches) {
         log.info("开始分析比赛数据...");
-
         try {
-            // 2. 过滤有效比赛
-            List<SubMatchInfo> validMatches = filterValidMatches(matchInfoList);
-            log.info("有效比赛：" + validMatches.size() + "场");
-            // 3. 并行分析每个比赛
             List<CompletableFuture<MatchAnalysis>> futures = validMatches.stream()
                     .map(match -> CompletableFuture.supplyAsync(() ->
                             analyzeSingleMatch(match, aiInfo), footballExecutor))
@@ -252,13 +247,14 @@ public class FootballAnalysisService {
 
         MatchInfoResponse matchInfoResponse = JSONObject.parseObject(matchListJson, MatchInfoResponse.class);
         List<MatchInfo> matchInfoList = matchInfoResponse.getValue().getMatchInfoList();
-        List<List<MatchInfo>> lists = splitIntoBatches2(matchInfoList, 10);
+        List<SubMatchInfo> validMatches = filterValidMatches(matchInfoList);
+        List<List<SubMatchInfo>> lists = splitIntoBatches2(validMatches, 3);
         lists.forEach(list -> {
             List<MatchAnalysis> analyses = analyzeMatches(aiInfo, list);
 
             if (!CollectionUtils.isEmpty(analyses)) {
                 // 按每5条一组分批发送
-                List<List<MatchAnalysis>> batches = splitIntoBatches(analyses, 5);
+                List<List<MatchAnalysis>> batches = splitIntoBatches(analyses, 3);
 
                 log.info("共分析 {} 场比赛，将分为 {} 批发送",
                         analyses.size(), batches.size());
@@ -300,8 +296,8 @@ public class FootballAnalysisService {
 
     }
 
-    private List<List<MatchInfo>> splitIntoBatches2(List<MatchInfo> analyses, int batchSize) {
-        List<List<MatchInfo>> batches = new ArrayList<>();
+    private List<List<SubMatchInfo>> splitIntoBatches2(List<SubMatchInfo> analyses, int batchSize) {
+        List<List<SubMatchInfo>> batches = new ArrayList<>();
 
         for (int i = 0; i < analyses.size(); i += batchSize) {
             int end = Math.min(analyses.size(), i + batchSize);

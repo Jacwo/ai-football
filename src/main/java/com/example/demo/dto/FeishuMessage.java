@@ -1,5 +1,6 @@
 package com.example.demo.dto;
 
+import com.alibaba.fastjson.annotation.JSONField;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,6 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class FeishuMessage {
+    @JSONField(name = "msg_type")
     private String msgType;
     private Card card;
 
