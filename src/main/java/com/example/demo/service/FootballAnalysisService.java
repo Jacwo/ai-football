@@ -41,6 +41,17 @@ public class FootballAnalysisService {
     @Autowired
     private ExecutorService footballExecutor;
 
+    @Autowired
+    private MatchInfoService matchInfoService;
+
+    @Autowired
+    private HistoricalMatchService historicalMatchService;
+    @Autowired
+    private SimilarMatchService similarMatchService;
+
+    @Autowired
+    private HadListService hadListService;
+
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
@@ -74,31 +85,6 @@ public class FootballAnalysisService {
         }
     }
 
-    private List<SubMatchInfo> filterValidMatches(List<MatchInfo> matchInfoList) {
-        List<SubMatchInfo> validMatches = new ArrayList<>();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
-        for (MatchInfo matchInfo : matchInfoList) {
-            try {
-                Date matchDate = dateFormat.parse(matchInfo.getMatchDate() + " 23:59:59");
-                Date now = new Date();
-
-                Calendar calendar = Calendar.getInstance();
-                calendar.setTime(now);
-                calendar.add(Calendar.DAY_OF_MONTH, 2);
-                Date twoDaysLater = calendar.getTime();
-
-                // 只分析未来2天内的比赛
-                if (matchDate.before(twoDaysLater)) {
-                    validMatches.addAll(matchInfo.getSubMatchList());
-                }
-            } catch (ParseException e) {
-                log.warn("日期解析失败: {}", matchInfo.getMatchDate(), e);
-            }
-        }
-
-        return validMatches;
-    }
 
     private MatchAnalysis analyzeSingleMatch(SubMatchInfo match, String aiInfo) {
         try {
@@ -113,7 +99,7 @@ public class FootballAnalysisService {
                     .build();
 
             // 获取近期交锋记录
-            analysis.setRecentMatches(getRecentMatches(matchId));
+            analysis.setRecentMatches(historicalMatchService.findHistoricalMatch(matchId));
 
             // 获取赔率历史
             analysis.setOddsHistory(getOddsHistory(matchId));
@@ -180,19 +166,14 @@ public class FootballAnalysisService {
 
     private List<OddsInfo> getOddsHistory(String matchId) {
         try {
-            String url = apiConfig.getFixedBonusUrl() + matchId;
-            String response = HttpClientUtil.doGet(url, apiConfig.getHttpConnectTimeout());
 
-            MatchInfoResponse2 matchInfoResponse2 = JSONObject.parseObject(response, MatchInfoResponse2.class);
-            List<HadList> hhadList = matchInfoResponse2.getValue().getOddsHistory().getHadList();
+            List<HadList> hhadList = hadListService.findHadList(matchId);
 
             if (!CollectionUtils.isEmpty(hhadList)) {
                 HadList latestOdds = hhadList.get(hhadList.size() - 1);
 
                 // 获取相似比赛
-                List<HistoricalMatch> similarMatches = getSimilarMatches(
-                        Double.valueOf(latestOdds.getH()), Double.valueOf(latestOdds.getA()), Double.valueOf(latestOdds.getD())
-                );
+                List<SimilarMatch> similarMatches = similarMatchService.findSimilarMatch(matchId);
 
                 OddsInfo oddsInfo = OddsInfo.builder()
                         .homeWin(Double.valueOf(latestOdds.getH()))
@@ -240,15 +221,9 @@ public class FootballAnalysisService {
     }
 
     public void analyzeAndNotify(String aiInfo) throws IOException {
-        String matchListJson = HttpClientUtil.doGet(
-                apiConfig.getMatchListUrl(),
-                apiConfig.getHttpConnectTimeout()
-        );
+        List<SubMatchInfo> currentDateMatch = matchInfoService.findCurrentDateMatch();
 
-        MatchInfoResponse matchInfoResponse = JSONObject.parseObject(matchListJson, MatchInfoResponse.class);
-        List<MatchInfo> matchInfoList = matchInfoResponse.getValue().getMatchInfoList();
-        List<SubMatchInfo> validMatches = filterValidMatches(matchInfoList);
-        List<List<SubMatchInfo>> lists = splitIntoBatches2(validMatches, 3);
+        List<List<SubMatchInfo>> lists = splitIntoBatches2(currentDateMatch, 3);
         lists.forEach(list -> {
             List<MatchAnalysis> analyses = analyzeMatches(aiInfo, list);
 

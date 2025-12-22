@@ -5,6 +5,7 @@ import com.example.demo.config.FootballApiConfig;
 import com.example.demo.dto.MatchAnalysis;
 import com.example.demo.dto.OddsInfo;
 import com.example.demo.dto.HistoricalMatch;
+import com.example.demo.dto.SimilarMatch;
 import com.example.demo.util.HttpClientUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,7 +97,7 @@ public class AIService {
 
             if (latestOdds.getSimilarMatches() != null && !latestOdds.getSimilarMatches().isEmpty()) {
                 prompt.append("\n相似历史比赛：\n");
-                for (HistoricalMatch match : latestOdds.getSimilarMatches()) {
+                for (SimilarMatch match : latestOdds.getSimilarMatches()) {
                     prompt.append(String.format("- %s vs %s：比分 %s（联赛：%s）\n",
                             match.getHomeTeam(), match.getAwayTeam(),
                             match.getScore(), match.getLeague()));

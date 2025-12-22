@@ -20,6 +20,10 @@ public class HadList extends BaseEntity {
     private String goalLine;
 
     private String matchId;
+
+    private String updateDate;
+
+    private String updateTime;
    // "hf": "1",
      //       "goalLine": "+3"
     // Define fields corresponding to each key-value pair in the "hhadList" array
