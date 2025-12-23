@@ -1,4 +1,4 @@
-package com.example.demo;
+package cn.xingxing;
 
 import cn.xingxing.data.DataService;
 import org.junit.jupiter.api.Test;
