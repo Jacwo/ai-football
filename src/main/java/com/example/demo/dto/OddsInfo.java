@@ -1,6 +1,7 @@
 package com.example.demo.dto;
 
 
+import com.example.demo.domain.SimilarMatch;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

@@ -2,8 +2,7 @@ package com.example.demo.mapper;
 
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.example.demo.dto.HadList;
-import com.example.demo.dto.SubMatchInfo;
+import com.example.demo.domain.HadList;
 
 /**
  * @Author: yangyuanliang

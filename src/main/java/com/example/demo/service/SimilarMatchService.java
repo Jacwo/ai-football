@@ -1,7 +1,7 @@
 package com.example.demo.service;
 
 
-import com.example.demo.dto.SimilarMatch;
+import com.example.demo.domain.SimilarMatch;
 
 import java.util.List;
 

@@ -1,8 +1,7 @@
 package com.example.demo.service;
 
 
-import com.example.demo.dto.HadList;
-import com.example.demo.dto.SimilarMatch;
+import com.example.demo.domain.HadList;
 
 import java.util.List;
 

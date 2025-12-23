@@ -1,7 +1,7 @@
 package com.example.demo.service;
 
 
-import com.example.demo.dto.SubMatchInfo;
+import com.example.demo.domain.SubMatchInfo;
 
 import java.util.List;
 

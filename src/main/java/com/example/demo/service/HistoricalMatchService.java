@@ -1,8 +1,7 @@
 package com.example.demo.service;
 
 
-import com.example.demo.dto.HistoricalMatch;
-import com.example.demo.dto.SubMatchInfo;
+import com.example.demo.domain.HistoricalMatch;
 
 import java.util.List;
 

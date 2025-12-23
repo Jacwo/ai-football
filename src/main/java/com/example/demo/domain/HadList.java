@@ -1,12 +1,13 @@
-package com.example.demo.dto;
+package com.example.demo.domain;
 
 import com.baomidou.mybatisplus.annotation.TableId;
-import com.example.demo.domain.BaseEntity;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Getter;
 import lombok.Setter;
 
 @Setter
 @Getter
+@TableName("had_list")
 public class HadList extends BaseEntity {
     @TableId
     private String id;

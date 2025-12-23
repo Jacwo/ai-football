@@ -1,5 +1,7 @@
 package com.example.demo.dto;
 
+import com.example.demo.domain.SubMatchInfo;
+
 import java.util.List;
 
 public class MatchInfo {

@@ -31,4 +31,16 @@ class DemoApplicationTests {
 	void contextLoads4() {
 		dataService.loadSimilarMatch(0);
 	}
+
+
+	@Test
+	void contextLoads5() {
+		dataService.loadMatchResult(0);
+	}
+
+
+	@Test
+	void contextLoads6() {
+		dataService.afterMatchAnalysis(0);
+	}
 }

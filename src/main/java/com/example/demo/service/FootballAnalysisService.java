@@ -3,6 +3,10 @@ package com.example.demo.service;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.example.demo.config.FootballApiConfig;
+import com.example.demo.domain.HadList;
+import com.example.demo.domain.HistoricalMatch;
+import com.example.demo.domain.SimilarMatch;
+import com.example.demo.domain.SubMatchInfo;
 import com.example.demo.dto.*;
 import com.example.demo.dto.url5.Match;
 import com.example.demo.dto.url5.MatchInfo5;
@@ -13,8 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -31,9 +33,6 @@ public class FootballAnalysisService {
 
     @Autowired
     private AIService aiService;
-
-    @Autowired
-    private AIServiceNew aiServiceNew;
 
     @Autowired
     private MessageBuilderService messageBuilder;
@@ -96,6 +95,7 @@ public class FootballAnalysisService {
                     .awayTeam(match.getAwayTeamAbbName())
                     .matchTime(parseMatchTime(match.getMatchDate(), match.getMatchTime()))
                     .league(match.getLeagueAbbName())
+                    .matchId(matchId)
                     .build();
 
             // 获取近期交锋记录
@@ -106,7 +106,7 @@ public class FootballAnalysisService {
 
             // AI分析
             if ("ai".equals(aiInfo)) {
-                analysis.setAiAnalysis(aiServiceNew.analyzeMatch(analysis));
+                analysis.setAiAnalysis(aiService.analyzeMatch(analysis));
             }
 
             return analysis;

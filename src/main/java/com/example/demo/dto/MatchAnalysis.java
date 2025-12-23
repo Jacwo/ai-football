@@ -1,5 +1,6 @@
 package com.example.demo.dto;
 
+import com.example.demo.domain.HistoricalMatch;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,6 +14,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MatchAnalysis {
+    private String matchId;
     private String homeTeam;
     private String awayTeam;
     private LocalDateTime matchTime;

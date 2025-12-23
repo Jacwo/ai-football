@@ -4,13 +4,12 @@ package com.example.demo.data;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.demo.config.FootballApiConfig;
+import com.example.demo.domain.*;
 import com.example.demo.dto.*;
 import com.example.demo.dto.url5.Match;
 import com.example.demo.dto.url5.MatchInfo5;
-import com.example.demo.mapper.HadListMapperMapper;
-import com.example.demo.mapper.HistoricalMatchMapper;
-import com.example.demo.mapper.MatchInfoMapper;
-import com.example.demo.mapper.SimilarMatchMapper;
+import com.example.demo.mapper.*;
+import com.example.demo.service.AIService;
 import com.example.demo.util.HttpClientUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +45,12 @@ public class DataServiceImpl implements DataService {
 
     @Autowired
     private SimilarMatchMapper similarMatchMapper;
+
+    @Autowired
+    private AiAnalysisResultMapper aiAnalysisResultMapper;
+
+    @Autowired
+    private AIService aiService;
 
     @Override
     public int loadMatchInfoData() {
@@ -110,7 +115,50 @@ public class DataServiceImpl implements DataService {
         return 0;
     }
 
+    @Override
+    public int loadMatchResult(Integer matchId) {
+        LambdaQueryWrapper<AiAnalysisResult> queryWrapper = new LambdaQueryWrapper<>();
+        LocalDate localDate = LocalDate.now();
 
+        queryWrapper.between(AiAnalysisResult::getMatchTime, localDate, localDate.plusDays(1));
+
+        List<AiAnalysisResult> aiAnalysisResults = aiAnalysisResultMapper.selectList(queryWrapper);
+        List<String> matchIds = aiAnalysisResults.stream().map(AiAnalysisResult::getMatchId).toList();
+        List<SubMatchInfo> matchResult = getMatchResult(matchIds);
+        if(!CollectionUtils.isEmpty(matchResult)) {
+            Map<Integer, String> collect = matchResult.stream().collect(Collectors.toMap(SubMatchInfo::getMatchId, SubMatchInfo::getSectionsNo999));
+            aiAnalysisResults.forEach(result -> {
+                if(collect.containsKey(Integer.valueOf(result.getMatchId()))) {
+                    result.setMatchResult(collect.get(Integer.valueOf(result.getMatchId())));
+                }
+            });
+            aiAnalysisResultMapper.updateById(aiAnalysisResults);
+        }
+        return 0;
+    }
+
+    @Override
+    public int afterMatchAnalysis(Integer matchId) {
+        aiService.afterMatchAnalysis();
+        return 0;
+    }
+
+    private List<SubMatchInfo> getMatchResult(List<String> matchIds ){
+        List<SubMatchInfo> subMatchInfos = new ArrayList<>();
+        String url = apiConfig.getMatchResultUrl();
+        String response = HttpClientUtil.doGet(url, apiConfig.getHttpConnectTimeout());
+        MatchInfoResponse matchInfoResponse = JSONObject.parseObject(response, MatchInfoResponse.class);
+        MatchInfoValue value = matchInfoResponse.getValue();
+        List<MatchInfo> matchInfoList = value.getMatchInfoList();
+        matchInfoList.forEach(info -> {
+            info.getSubMatchList().forEach(subMatchInfo -> {
+                if(matchIds.contains(String.valueOf(subMatchInfo.getMatchId()))) {
+                    subMatchInfos.add(subMatchInfo);
+                }
+            });
+        });
+        return subMatchInfos;
+    }
     private List<SimilarMatch> getSimilarMatches(String homeWin, String awayWin, String draw, String matchId) {
         try {
             String url = String.format(apiConfig.getSearchOddsUrl(), homeWin, awayWin, draw);

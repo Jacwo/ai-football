@@ -3,10 +3,8 @@ package com.example.demo.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.demo.data.DataService;
-import com.example.demo.dto.HadList;
-import com.example.demo.dto.HistoricalMatch;
-import com.example.demo.dto.SimilarMatch;
-import com.example.demo.mapper.HadListMapperMapper;
+import com.example.demo.domain.HadList;
+import com.example.demo.domain.SimilarMatch;
 import com.example.demo.mapper.SimilarMatchMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

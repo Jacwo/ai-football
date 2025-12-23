@@ -29,4 +29,11 @@ public interface DataService {
     * 获取当日比赛赔率变化信息
     */
    int loadSimilarMatch(Integer matchId);
+
+
+   int loadMatchResult(Integer matchId);
+
+
+   int afterMatchAnalysis(Integer matchId);
+
 }
