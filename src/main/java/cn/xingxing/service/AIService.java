@@ -78,6 +78,7 @@ public class AIService {
     public String afterMatchAnalysis() {
         LambdaQueryWrapper<AiAnalysisResult> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.ne(AiAnalysisResult::getMatchResult, "");
+        queryWrapper.isNull(AiAnalysisResult::getAfterMatchAnalysis);
         List<AiAnalysisResult> aiAnalysisResults = aiAnalysisResultMapper.selectList(queryWrapper);
         aiAnalysisResults.forEach(result -> {
             String prompt = buildAfterAnalysisPrompt(result);
@@ -98,7 +99,9 @@ public class AIService {
                         赛前分析内容：
                         %s      
                         最终结果：
-                        %s    
+                        %s   
+                        之前提问方式
+                        %s 
                         请从以下维度进行综合分析：
                         1. **提问方式调整**：我之前的提问方式哪些需要优化
                         2. **数据支撑**：赛前的数据支撑需要哪些优化
@@ -107,7 +110,34 @@ public class AIService {
                 aiAnalysisResult.getHomeTeam(), aiAnalysisResult.getAwayTeam(),
                 aiAnalysisResult.getMatchTime(),
                 aiAnalysisResult.getAiAnalysis(),
-                aiAnalysisResult.getMatchResult()
+                aiAnalysisResult.getMatchResult(),
+                getAsk()
         );
+    }
+
+
+    String getAsk(){
+        String ask = """
+                    请对 %s vs %s 这场比赛进行专业分析。 
+                        比赛基本信息：
+                        - 联赛：%s
+                        - 比赛时间：%s    
+                        赔率数据：
+                        %s      
+                        近期交锋：
+                        %s
+                        比赛近况
+                        %s
+                        比赛特征
+                        %s    
+                        请从以下维度进行综合分析：
+                        1. **赔率分析**：解读当前赔率反映的市场预期和胜负概率分布
+                        2. **基本面分析**：基于历史交锋记录分析两队战术风格、心理优势和近期状态
+                        3. **多因素分析**：基于近期比赛特征、比赛近况分析
+                        4. **进球预期**：结合两队攻防特点预测可能的进球数范围  
+                        权重比例：赔率0.4 基本面0.3 多因素0.3     
+                        请给出最多三个场景最可能的比分预测。
+                """;
+        return ask;
     }
 }
