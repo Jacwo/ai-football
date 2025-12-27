@@ -75,7 +75,7 @@ class DemoApplicationTests {
 
 	@Test
 	void contextLoads9() {
-		MatchAnalysis matchAnalysis = analysisService.analysisByMatchId("2036379");
+		MatchAnalysis matchAnalysis = analysisService.analysisByMatchId("2036380");
 		System.out.println(matchAnalysis.getAiAnalysis());
 		notifyService.sendMsg(List.of(matchAnalysis));
 	}

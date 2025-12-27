@@ -155,8 +155,7 @@ public class DataServiceImpl implements DataService {
         queryWrapper.between(AiAnalysisResult::getMatchTime, localDate.minusDays(2), localDate.plusDays(1));
 
         List<AiAnalysisResult> aiAnalysisResults = aiAnalysisResultMapper.selectList(queryWrapper);
-        List<String> matchIds = aiAnalysisResults.stream().map(AiAnalysisResult::getMatchId).toList();
-        List<SubMatchInfo> matchResult = getMatchResult(matchIds);
+        List<SubMatchInfo> matchResult = getMatchResult();
         if (!CollectionUtils.isEmpty(matchResult)) {
             Map<Integer, String> collect = matchResult.stream().collect(Collectors.toMap(SubMatchInfo::getMatchId, SubMatchInfo::getSectionsNo999));
             aiAnalysisResults.forEach(result -> {
@@ -197,21 +196,15 @@ public class DataServiceImpl implements DataService {
         return 0;
     }
 
-    private List<SubMatchInfo> getMatchResult(List<String> matchIds) {
-        List<SubMatchInfo> subMatchInfos = new ArrayList<>();
+    private List<SubMatchInfo> getMatchResult() {
         String url = apiConfig.getMatchResultUrl();
         String response = HttpClientUtil.doGet(url, apiConfig.getHttpConnectTimeout());
         MatchInfoResponse matchInfoResponse = JSONObject.parseObject(response, MatchInfoResponse.class);
         MatchInfoValue value = matchInfoResponse.getValue();
         List<MatchInfo> matchInfoList = value.getMatchInfoList();
-        matchInfoList.forEach(info -> {
-            info.getSubMatchList().forEach(subMatchInfo -> {
-                if (matchIds.contains(String.valueOf(subMatchInfo.getMatchId()))) {
-                    subMatchInfos.add(subMatchInfo);
-                }
-            });
-        });
-        return subMatchInfos;
+        List<SubMatchInfo> collect = matchInfoList.stream().flatMap((MatchInfo matchInfo) -> matchInfo.getSubMatchList().stream()).collect(Collectors.toList());
+
+        return collect;
     }
 
     private List<SimilarMatch> getSimilarMatches(String homeWin, String awayWin, String draw, String matchId) {

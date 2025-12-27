@@ -90,10 +90,12 @@ public class FootballController {
             matchInfoVos = JSONObject.parseArray(JSONObject.toJSONString(currentDateMatch),MatchInfoVo.class);
             matchInfoVos.forEach(matchInfoVo -> {
                 List<HadList> hadList = hadListService.findHadList(String.valueOf(matchInfoVo.getMatchId()));
-                HadList last = hadList.getLast();
-                matchInfoVo.setHomeWin(last.getH());
-                matchInfoVo.setAwayWin(last.getA());
-                matchInfoVo.setDraw(last.getD());
+                if(!CollectionUtils.isEmpty(hadList)){
+                    HadList last = hadList.getLast();
+                    matchInfoVo.setHomeWin(last.getH());
+                    matchInfoVo.setAwayWin(last.getA());
+                    matchInfoVo.setDraw(last.getD());
+                }
             });
         }
         return ApiResponse.success(matchInfoVos);
