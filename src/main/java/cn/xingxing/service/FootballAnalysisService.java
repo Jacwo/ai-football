@@ -1,6 +1,7 @@
 package cn.xingxing.service;
 
 import cn.xingxing.domain.*;
+import cn.xingxing.notify.NotifyService;
 import cn.xingxing.vo.AiAnalysisResultVo;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -33,9 +34,6 @@ public class FootballAnalysisService {
     private AIService aiService;
 
     @Autowired
-    private MessageBuilderService messageBuilder;
-
-    @Autowired
     private ExecutorService footballExecutor;
 
     @Autowired
@@ -57,6 +55,9 @@ public class FootballAnalysisService {
 
     @Autowired
     private InformationService informationService;
+
+    @Autowired
+    private NotifyService notifyService;
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -270,67 +271,16 @@ public class FootballAnalysisService {
     public void analyzeAndNotify(String aiInfo) {
         List<SubMatchInfo> currentDateMatch = matchInfoService.findCurrentDateMatch();
 
-        List<List<SubMatchInfo>> lists = splitIntoBatches2(currentDateMatch, 3);
+        List<List<SubMatchInfo>> lists = splitIntoBatches(currentDateMatch, 3);
         lists.forEach(list -> {
             List<MatchAnalysis> analyses = analyzeMatches(aiInfo, list);
-
-            if (!CollectionUtils.isEmpty(analyses)) {
-                // 按每5条一组分批发送
-                List<List<MatchAnalysis>> batches = splitIntoBatches(analyses, 3);
-
-                log.info("共分析 {} 场比赛，将分为 {} 批发送",
-                        analyses.size(), batches.size());
-                // 发送每个批次
-                for (int i = 0; i < batches.size(); i++) {
-                    List<MatchAnalysis> batch = batches.get(i);
-                    log.info("正在发送第 {} 批，包含 {} 场比赛", i + 1, batch.size());
-
-                    // 构建消息
-                    String message = messageBuilder.buildFeishuMessage(batch, "ai".equals(aiInfo));
-
-                    try {
-                        // 如果是最后一批，可以添加结束标记
-                        if (i == batches.size() - 1) {
-                            message = addEndMarker(message);
-                        }
-
-                        String response = HttpClientUtil.doPost(
-                                apiConfig.getFeishuWebhookUrl(),
-                                message,
-                                apiConfig.getHttpReadTimeout()
-                        );
-                        log.info("第 {} 批飞书消息发送成功: {}", i + 1, response);
-
-                        // 批次之间添加延迟，避免发送过快
-                        if (i < batches.size() - 1) {
-                            Thread.sleep(1000); // 1秒延迟
-                        }
-
-                    } catch (Exception e) {
-                        log.error("第 {} 批飞书消息发送失败", i + 1, e);
-                    }
-                }
-            } else {
-                log.info("没有需要分析的比赛");
-            }
+            notifyService.sendMsg(analyses);
         });
 
     }
 
-    private List<List<SubMatchInfo>> splitIntoBatches2(List<SubMatchInfo> analyses, int batchSize) {
+    private List<List<SubMatchInfo>> splitIntoBatches(List<SubMatchInfo> analyses, int batchSize) {
         List<List<SubMatchInfo>> batches = new ArrayList<>();
-
-        for (int i = 0; i < analyses.size(); i += batchSize) {
-            int end = Math.min(analyses.size(), i + batchSize);
-            batches.add(new ArrayList<>(analyses.subList(i, end)));
-        }
-
-        return batches;
-    }
-
-    private List<List<MatchAnalysis>> splitIntoBatches(List<MatchAnalysis> analyses, int batchSize) {
-        List<List<MatchAnalysis>> batches = new ArrayList<>();
-
         for (int i = 0; i < analyses.size(); i += batchSize) {
             int end = Math.min(analyses.size(), i + batchSize);
             batches.add(new ArrayList<>(analyses.subList(i, end)));
@@ -341,39 +291,12 @@ public class FootballAnalysisService {
 
 
 
-    /**
-     * 为最后一批消息添加结束标记
-     */
-    private String addEndMarker(String message) {
-        try {
-            // 解析JSON消息
-            JSONObject messageJson = JSONObject.parseObject(message);
-            JSONObject card = messageJson.getJSONObject("card");
-            JSONArray elements = card.getJSONArray("elements");
 
-            // 添加结束标记
-            JSONObject endMarker = new JSONObject();
-            endMarker.put("tag", "div");
 
-            JSONObject textContent = new JSONObject();
-            textContent.put("tag", "lark_md");
-            textContent.put("content", "--- 所有比赛分析发送完毕 ---");
 
-            endMarker.put("text", textContent);
-            elements.add(endMarker);
-
-            // 重新构建消息
-            return messageJson.toJSONString();
-        } catch (Exception e) {
-            log.warn("添加结束标记失败，返回原始消息", e);
-            return message;
-        }
-    }
-
-    public String analysisByMatchId(String matchId) {
+    public MatchAnalysis analysisByMatchId(String matchId) {
         SubMatchInfo byId = matchInfoService.getById(matchId);
         MatchAnalysis ai = analyzeSingleMatch(byId, "ai");
-        assert ai != null;
-        return ai.getAiAnalysis();
+        return ai;
     }
 }

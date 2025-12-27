@@ -3,6 +3,7 @@ package cn.xingxing.web;
 import cn.xingxing.domain.HadList;
 import cn.xingxing.domain.SubMatchInfo;
 import cn.xingxing.dto.ApiResponse;
+import cn.xingxing.dto.MatchAnalysis;
 import cn.xingxing.service.FootballAnalysisService;
 import cn.xingxing.service.HadListService;
 import cn.xingxing.service.MatchInfoService;
@@ -101,7 +102,8 @@ public class FootballController {
 
     @PostMapping("/analysis/{matchId}")
     public ApiResponse<String> analysisByMatchId(@PathVariable String matchId) {
-        return ApiResponse.success(analysisService.analysisByMatchId(matchId));
+        MatchAnalysis matchAnalysis = analysisService.analysisByMatchId(matchId);
+        return ApiResponse.success(matchAnalysis.getAiAnalysis());
     }
 
 }

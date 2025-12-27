@@ -2,11 +2,15 @@ package cn.xingxing;
 
 import cn.xingxing.data.DataService;
 import cn.xingxing.domain.TeamStats;
+import cn.xingxing.dto.MatchAnalysis;
+import cn.xingxing.notify.NotifyService;
 import cn.xingxing.service.FootballAnalysisService;
 import cn.xingxing.service.TeamStatsService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+
+import java.util.List;
 
 @SpringBootTest
 class DemoApplicationTests {
@@ -18,6 +22,9 @@ class DemoApplicationTests {
 
 	@Autowired
 	private FootballAnalysisService analysisService;
+
+	@Autowired
+	private NotifyService notifyService;
 	@Test
 	void contextLoads() {
 		dataService.loadMatchInfoData();
@@ -68,7 +75,8 @@ class DemoApplicationTests {
 
 	@Test
 	void contextLoads9() {
-		String s = analysisService.analysisByMatchId("2036334");
-		System.out.println(s);
+		MatchAnalysis matchAnalysis = analysisService.analysisByMatchId("2036379");
+		System.out.println(matchAnalysis.getAiAnalysis());
+		notifyService.sendMsg(List.of(matchAnalysis));
 	}
 }

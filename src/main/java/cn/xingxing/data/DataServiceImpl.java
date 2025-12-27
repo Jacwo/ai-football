@@ -110,13 +110,12 @@ public class DataServiceImpl implements DataService {
 
     @Override
     public int loadSimilarMatch(Integer matchId) {
-        LambdaQueryWrapper<SubMatchInfo> queryWrapper = new LambdaQueryWrapper<>();
+       /* LambdaQueryWrapper<SubMatchInfo> queryWrapper = new LambdaQueryWrapper<>();
         LocalDate localDate = LocalDate.now();
-
         queryWrapper.between(SubMatchInfo::getMatchDate, localDate, localDate.plusDays(1));
-        List<Integer> list = matchInfoMapper.selectList(queryWrapper).stream().map(SubMatchInfo::getMatchId).toList();
+        List<Integer> list = matchInfoMapper.selectList(queryWrapper).stream().map(SubMatchInfo::getMatchId).toList();*/
         LambdaQueryWrapper<HadList> hadQuery = new LambdaQueryWrapper<>();
-        hadQuery.in(HadList::getMatchId, list);
+        hadQuery.eq(HadList::getMatchId, matchId);
         List<HadList> hadLists = hadListMapperMapper.selectList(hadQuery);
         if (!CollectionUtils.isEmpty(hadLists)) {
             hadLists.forEach(hadList -> {

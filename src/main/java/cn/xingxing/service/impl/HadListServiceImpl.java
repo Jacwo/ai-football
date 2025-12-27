@@ -9,6 +9,7 @@ import cn.xingxing.mapper.HadListMapperMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -30,13 +31,18 @@ public class HadListServiceImpl implements HadListService {
         LambdaQueryWrapper<HadList> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(HadList::getMatchId, matchId);
         List<HadList> hadLists = hadListMapperMapper.selectList(queryWrapper);
-        if(hadLists.isEmpty()){
+        if(hadLists.isEmpty() || checkHadNeedUpdate(hadLists.getLast())){
             dataService.loadHadListData(Integer.parseInt(matchId));
             hadLists = hadListMapperMapper.selectList(queryWrapper);
         }
-
-
         return hadLists;
+    }
+
+    public boolean checkHadNeedUpdate(HadList hadList){
+        if(hadList.getCreateTime().isBefore(LocalDateTime.now().minusHours(8))){
+            return true;
+        }
+        return false;
     }
 
 
