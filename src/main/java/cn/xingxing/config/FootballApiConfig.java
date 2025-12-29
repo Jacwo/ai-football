@@ -32,10 +32,6 @@ public class FootballApiConfig {
     // 飞书Webhook
     private String feishuWebhookUrl = "https://open.feishu.cn/open-apis/bot/v2/hook/a553e701-25e0-4e58-ad26-920fde4c2631";
 
-    // AI配置
-    private String deepseekApiUrl = "https://api.deepseek.com/chat/completions";
-    private String deepseekApiKey = "sk-2e0ca2fdd7c6405da77d081748210f1e";
-
     // 定时任务配置
     private long scheduleInitialDelay = 10000;
     private long scheduleFixedDelay = 14400000;
