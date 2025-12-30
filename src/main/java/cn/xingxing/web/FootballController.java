@@ -8,14 +8,12 @@ import cn.xingxing.service.FootballAnalysisService;
 import cn.xingxing.service.HadListService;
 import cn.xingxing.service.MatchInfoService;
 import cn.xingxing.vo.MatchInfoVo;
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -41,7 +39,7 @@ public class FootballController {
     /**
      * 定时分析任务（每4小时执行一次）
      */
-    @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:10000}", fixedDelayString = "${football.api.schedule-fixed-delay:14400000}")
+   // @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:10000}", fixedDelayString = "${football.api.schedule-fixed-delay:14400000}")
     public void scheduledAnalysis() {
         log.info("定时分析任务启动");
 
@@ -100,12 +98,22 @@ public class FootballController {
         }
         return ApiResponse.success(matchInfoVos);
     }
+    @GetMapping("/{matchId}")
+    public ApiResponse<MatchInfoVo> findMatchById(@PathVariable String matchId) {
+        MatchInfoVo matchInfoVo = new MatchInfoVo();
+        SubMatchInfo matchById = matchInfoService.findMatchById(matchId);
+        BeanUtils.copyProperties(matchById,matchInfoVo);
+        return ApiResponse.success(matchInfoVo);
+    }
+
+
 
 
     @PostMapping("/analysis/{matchId}")
     public ApiResponse<String> analysisByMatchId(@PathVariable String matchId) {
         MatchAnalysis matchAnalysis = analysisService.analysisByMatchId(matchId);
         return ApiResponse.success(matchAnalysis.getAiAnalysis());
+
     }
 
 }

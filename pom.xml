@@ -17,12 +17,18 @@
 	<properties>
 		<java.version>21</java.version>
 		<fastjson.version>1.2.83</fastjson.version>
+		<hutool.version>5.8.24</hutool.version>
 
 	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>cn.hutool</groupId>
+			<artifactId>hutool-all</artifactId>
+			<version>${hutool.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.jsoup</groupId>

@@ -96,7 +96,7 @@ public class FootballAnalysisService {
     private MatchAnalysis analyzeSingleMatch(SubMatchInfo match, String aiInfo) {
         try {
             String matchId = String.valueOf(match.getMatchId());
-
+            AiAnalysisResultVo byMatchId = aiAnalysisResultService.findByMatchId(matchId);
             // 构建分析对象
             MatchAnalysis analysis = MatchAnalysis.builder()
                     .homeTeam(match.getHomeTeamAbbName())
@@ -105,7 +105,10 @@ public class FootballAnalysisService {
                     .league(match.getLeagueAbbName())
                     .matchId(matchId)
                     .build();
-
+            if(byMatchId != null) {
+                analysis.setAiAnalysis(byMatchId.getAiAnalysis());
+                return analysis;
+            }
             // 获取近期交锋记录
             analysis.setRecentMatches(historicalMatchService.findHistoricalMatch(matchId));
 
@@ -121,16 +124,10 @@ public class FootballAnalysisService {
             Information byId = informationService.getById(matchId);
             if(byId!=null){
                 analysis.setInformation(byId.getInfo());
-
             }
             // AI分析
             if ("ai".equals(aiInfo)) {
-                AiAnalysisResultVo byMatchId = aiAnalysisResultService.findByMatchId(matchId);
-                if(byMatchId != null) {
-                    analysis.setAiAnalysis(byMatchId.getAiAnalysis());
-                }else{
-                    analysis.setAiAnalysis(aiService.analyzeMatch(analysis));
-                }
+                analysis.setAiAnalysis(aiService.analyzeMatch(analysis));
             }
 
             return analysis;
@@ -145,7 +142,6 @@ public class FootballAnalysisService {
     private MatchHistoryData getMatchHistoryData(String matchId) {
         String url = String.format(apiConfig.getMatchHistoryUrl(),matchId);
         String response = HttpClientUtil.doGet(url, apiConfig.getHttpConnectTimeout());
-
         MatchHistoryResponse matchAnalysisResponse = JSONObject.parseObject(response, MatchHistoryResponse.class);
         return matchAnalysisResponse.getValue();
 
@@ -155,11 +151,8 @@ public class FootballAnalysisService {
         try {
             String url = String.format(apiConfig.getMatchFeatureUrl(),matchId);
             String response = HttpClientUtil.doGet(url, apiConfig.getHttpConnectTimeout());
-
             MatchAnalysisResponse matchAnalysisResponse = JSONObject.parseObject(response, MatchAnalysisResponse.class);
             return matchAnalysisResponse.getValue();
-
-
         } catch (Exception e) {
             log.error("获取比赛特征失败", e);
         }
@@ -296,7 +289,6 @@ public class FootballAnalysisService {
 
     public MatchAnalysis analysisByMatchId(String matchId) {
         SubMatchInfo byId = matchInfoService.getById(matchId);
-        MatchAnalysis ai = analyzeSingleMatch(byId, "ai");
-        return ai;
+        return analyzeSingleMatch(byId, "ai");
     }
 }

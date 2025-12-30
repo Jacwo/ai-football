@@ -31,19 +31,10 @@ public class HadListServiceImpl implements HadListService {
         LambdaQueryWrapper<HadList> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(HadList::getMatchId, matchId);
         List<HadList> hadLists = hadListMapperMapper.selectList(queryWrapper);
-        if(hadLists.isEmpty() || checkHadNeedUpdate(hadLists.getLast())){
-            dataService.loadHadListData(Integer.parseInt(matchId));
+        if (hadLists.isEmpty()) {
+            dataService.syncHadListByMatchId(matchId);
             hadLists = hadListMapperMapper.selectList(queryWrapper);
         }
         return hadLists;
     }
-
-    public boolean checkHadNeedUpdate(HadList hadList){
-        if(hadList.getCreateTime().isBefore(LocalDateTime.now().minusHours(8))){
-            return true;
-        }
-        return false;
-    }
-
-
 }

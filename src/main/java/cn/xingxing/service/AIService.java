@@ -108,7 +108,6 @@ public class AIService {
             result.setAfterMatchAnalysis(chat);
             aiAnalysisResultMapper.updateById(result);
         });
-       // aiAnalysisResultMapper.updateById(aiAnalysisResults);
         return "";
     }
 

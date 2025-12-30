@@ -2,6 +2,7 @@ package cn.xingxing.service;
 
 
 import cn.xingxing.domain.SubMatchInfo;
+import cn.xingxing.vo.MatchInfoVo;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 import java.util.List;
@@ -13,4 +14,6 @@ import java.util.List;
  */
 public interface MatchInfoService extends IService<SubMatchInfo> {
     List<SubMatchInfo> findCurrentDateMatch();
+
+    SubMatchInfo findMatchById(String matchId);
 }

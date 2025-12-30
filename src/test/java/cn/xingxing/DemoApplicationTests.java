@@ -27,37 +27,37 @@ class DemoApplicationTests {
 	private NotifyService notifyService;
 	@Test
 	void contextLoads() {
-		dataService.loadMatchInfoData();
+		dataService.syncMatchInfoData();
 	}
 
 
 	@Test
 	void contextLoads2() {
-		dataService.loadHistoryData(0);
+		dataService.syncHistoryData();
 	}
 
 
 	@Test
 	void contextLoads3() {
-		dataService.loadHadListData(0);
+		dataService.syncHadListData();
 	}
 
 
 	@Test
 	void contextLoads4() {
-		dataService.loadSimilarMatch(0);
+		dataService.syncSimilarMatch();
 	}
 
 
 	@Test
 	void contextLoads5() {
-		dataService.loadMatchResult(0);
+		dataService.syncMatchResult();
 	}
 
 
 	@Test
 	void contextLoads6() {
-		dataService.afterMatchAnalysis(0);
+		dataService.afterMatchAnalysis();
 	}
 
 

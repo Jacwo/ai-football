@@ -58,7 +58,7 @@ public class DataServiceImpl implements DataService {
     private TeamStatsService teamStatsService;
 
     @Override
-    public int loadMatchInfoData() {
+    public int syncMatchInfoData() {
         String matchListJson = HttpClientUtil.doGet(
                 apiConfig.getMatchListUrl(),
                 apiConfig.getHttpConnectTimeout()
@@ -72,15 +72,8 @@ public class DataServiceImpl implements DataService {
     }
 
     @Override
-    public int loadHistoryData(Integer matchId) {
-        LambdaQueryWrapper<SubMatchInfo> queryWrapper = new LambdaQueryWrapper<>();
-        LocalDate localDate = LocalDate.now();
-
-        queryWrapper.between(SubMatchInfo::getMatchDate, localDate, localDate.plusDays(1));
-        List<Integer> list = new ArrayList<>(matchInfoMapper.selectList(queryWrapper).stream().map(SubMatchInfo::getMatchId).toList());
-        if(matchId != null ){
-            list.add(matchId);
-        }
+    public int syncHistoryData() {
+        List<Integer> list = new ArrayList<>(matchInfoMapper.selectList(buildMatchInfoQuery()).stream().map(SubMatchInfo::getMatchId).toList());
         list.forEach(id -> {
             List<HistoricalMatch> recentMatches = getRecentMatches(String.valueOf(id));
             historicalMatchMapper.insertOrUpdate(recentMatches);
@@ -88,17 +81,17 @@ public class DataServiceImpl implements DataService {
         return 0;
     }
 
+
     @Override
-    public int loadHadListData(Integer matchId) {
-        LambdaQueryWrapper<SubMatchInfo> queryWrapper = new LambdaQueryWrapper<>();
-        LocalDate localDate = LocalDate.now();
+    public int loadHistoryDataByMatchId(String matchId) {
+        List<HistoricalMatch> recentMatches = getRecentMatches(matchId);
+        historicalMatchMapper.insertOrUpdate(recentMatches);
+        return 0;
+    }
 
-        queryWrapper.between(SubMatchInfo::getMatchDate, localDate, localDate.plusDays(1));
-
-        List<Integer> list = new ArrayList<>(matchInfoMapper.selectList(queryWrapper).stream().map(SubMatchInfo::getMatchId).toList());
-        if(matchId != null ){
-            list.add(matchId);
-        }
+    @Override
+    public int syncHadListData() {
+        List<Integer> list = new ArrayList<>(matchInfoMapper.selectList(buildMatchInfoQuery()).stream().map(SubMatchInfo::getMatchId).toList());
         list.forEach(id -> {
             List<HadList> hadList = getHadList(String.valueOf(id));
             if (!CollectionUtils.isEmpty(hadList)) {
@@ -109,11 +102,26 @@ public class DataServiceImpl implements DataService {
     }
 
     @Override
-    public int loadSimilarMatch(Integer matchId) {
-       /* LambdaQueryWrapper<SubMatchInfo> queryWrapper = new LambdaQueryWrapper<>();
+    public int syncSimilarMatch() {
+        LambdaQueryWrapper<SubMatchInfo> queryWrapper = new LambdaQueryWrapper<>();
         LocalDate localDate = LocalDate.now();
         queryWrapper.between(SubMatchInfo::getMatchDate, localDate, localDate.plusDays(1));
-        List<Integer> list = matchInfoMapper.selectList(queryWrapper).stream().map(SubMatchInfo::getMatchId).toList();*/
+        List<Integer> list = matchInfoMapper.selectList(queryWrapper).stream().map(SubMatchInfo::getMatchId).toList();
+        LambdaQueryWrapper<HadList> hadQuery = new LambdaQueryWrapper<>();
+        hadQuery.in(HadList::getMatchId, list);
+        List<HadList> hadLists = hadListMapperMapper.selectList(hadQuery);
+        if (!CollectionUtils.isEmpty(hadLists)) {
+            hadLists.forEach(hadList -> {
+                List<SimilarMatch> similarMatches = getSimilarMatches(hadList.getH(), hadList.getA(), hadList.getD(), hadList.getMatchId());
+                similarMatchMapper.insertOrUpdate(similarMatches);
+            });
+        }
+        return 0;
+    }
+
+
+    @Override
+    public int loadSimilarMatchByMatchId(String matchId) {
         LambdaQueryWrapper<HadList> hadQuery = new LambdaQueryWrapper<>();
         hadQuery.eq(HadList::getMatchId, matchId);
         List<HadList> hadLists = hadListMapperMapper.selectList(hadQuery);
@@ -121,39 +129,17 @@ public class DataServiceImpl implements DataService {
             hadLists.forEach(hadList -> {
                 List<SimilarMatch> similarMatches = getSimilarMatches(hadList.getH(), hadList.getA(), hadList.getD(), hadList.getMatchId());
                 similarMatchMapper.insertOrUpdate(similarMatches);
-                List<SimilarMatch> similarMatches2 = getSimilarMatches2(hadList.getH(), hadList.getA(), hadList.getD(), hadList.getMatchId());
-                similarMatchMapper.insertOrUpdate(similarMatches2);
             });
         }
         return 0;
     }
 
-    private List<SimilarMatch> getSimilarMatches2(String homeWin, String awayWin, String draw, String matchId) {
-        try {
-            String url = String.format(apiConfig.getSearchOddsUrl2(), homeWin, awayWin, draw);
-            String response = HttpClientUtil.doGet(url, apiConfig.getHttpConnectTimeout());
-
-            MatchInfoResponse3 matchInfoResponse3 = JSONObject.parseObject(response, MatchInfoResponse3.class);
-            List<MatchItem> matchList = matchInfoResponse3.getValue().getMatchList();
-
-            if (!CollectionUtils.isEmpty(matchList)) {
-                return matchList.stream()
-                        .map(f -> convertMatchItem(f, homeWin, awayWin, draw, matchId))
-                        .collect(Collectors.toList());
-            }
-        } catch (Exception e) {
-            log.error("获取相似比赛失败", e);
-        }
-        return Collections.emptyList();
-    }
 
     @Override
-    public int loadMatchResult(Integer matchId) {
+    public int syncMatchResult() {
         LambdaQueryWrapper<AiAnalysisResult> queryWrapper = new LambdaQueryWrapper<>();
         LocalDate localDate = LocalDate.now();
-
-        queryWrapper.between(AiAnalysisResult::getMatchTime, localDate.minusDays(2), localDate.plusDays(1));
-
+        queryWrapper.between(AiAnalysisResult::getMatchTime, localDate.minusDays(5), localDate.plusDays(1));
         List<AiAnalysisResult> aiAnalysisResults = aiAnalysisResultMapper.selectList(queryWrapper);
         List<SubMatchInfo> matchResult = getMatchResult();
         if (!CollectionUtils.isEmpty(matchResult)) {
@@ -164,7 +150,6 @@ public class DataServiceImpl implements DataService {
                 }
             });
             aiAnalysisResultMapper.updateById(aiAnalysisResults);
-
             List<Integer> list = matchResult.stream().map(SubMatchInfo::getMatchId).toList();
             LambdaUpdateWrapper<SubMatchInfo> updateWrapper = new LambdaUpdateWrapper<>();
             updateWrapper.in(SubMatchInfo::getMatchId, list);
@@ -176,7 +161,7 @@ public class DataServiceImpl implements DataService {
     }
 
     @Override
-    public int afterMatchAnalysis(Integer matchId) {
+    public int afterMatchAnalysis() {
         aiService.afterMatchAnalysis();
         return 0;
     }
@@ -196,15 +181,21 @@ public class DataServiceImpl implements DataService {
         return 0;
     }
 
+    @Override
+    public void syncHadListByMatchId(String matchId) {
+        List<HadList> hadList = getHadList(matchId);
+        if (!CollectionUtils.isEmpty(hadList)) {
+            hadListMapperMapper.insertOrUpdate(hadList);
+        }
+    }
+
     private List<SubMatchInfo> getMatchResult() {
         String url = apiConfig.getMatchResultUrl();
         String response = HttpClientUtil.doGet(url, apiConfig.getHttpConnectTimeout());
         MatchInfoResponse matchInfoResponse = JSONObject.parseObject(response, MatchInfoResponse.class);
         MatchInfoValue value = matchInfoResponse.getValue();
         List<MatchInfo> matchInfoList = value.getMatchInfoList();
-        List<SubMatchInfo> collect = matchInfoList.stream().flatMap((MatchInfo matchInfo) -> matchInfo.getSubMatchList().stream()).collect(Collectors.toList());
-
-        return collect;
+        return matchInfoList.stream().flatMap((MatchInfo matchInfo) -> matchInfo.getSubMatchList().stream()).collect(Collectors.toList());
     }
 
     private List<SimilarMatch> getSimilarMatches(String homeWin, String awayWin, String draw, String matchId) {
@@ -329,5 +320,10 @@ public class DataServiceImpl implements DataService {
         return validMatches;
     }
 
-
+    public LambdaQueryWrapper<SubMatchInfo> buildMatchInfoQuery() {
+        LambdaQueryWrapper<SubMatchInfo> queryWrapper = new LambdaQueryWrapper<>();
+        LocalDate localDate = LocalDate.now();
+        queryWrapper.between(SubMatchInfo::getMatchDate, localDate, localDate.plusDays(1));
+        return queryWrapper;
+    }
 }

@@ -22,13 +22,14 @@ public class HistoricalMatchServiceImpl implements HistoricalMatchService {
     private HistoricalMatchMapper historicalMatchMapper;
     @Autowired
     private DataService dataService;
+
     @Override
     public List<HistoricalMatch> findHistoricalMatch(String matchId) {
         LambdaQueryWrapper<HistoricalMatch> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(HistoricalMatch::getMatchId, matchId);
         List<HistoricalMatch> historicalMatches = historicalMatchMapper.selectList(queryWrapper);
-        if(historicalMatches.isEmpty()){
-            dataService.loadHistoryData(Integer.parseInt(matchId));
+        if (historicalMatches.isEmpty()) {
+            dataService.loadHistoryDataByMatchId(matchId);
             return historicalMatchMapper.selectList(queryWrapper);
         }
         return historicalMatches;

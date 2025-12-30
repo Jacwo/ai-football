@@ -2,9 +2,12 @@ package cn.xingxing.service;
 
 
 import cn.xingxing.domain.AiAnalysisResult;
-import cn.xingxing.domain.SubMatchInfo;
+import cn.xingxing.dto.AnalysisPageDTO;
+import cn.xingxing.dto.PageVO;
 import cn.xingxing.vo.AiAnalysisResultVo;
 import com.baomidou.mybatisplus.extension.service.IService;
+
+import java.util.List;
 
 /**
  * @Author: yangyuanliang
@@ -14,4 +17,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
 public interface AiAnalysisResultService extends IService<AiAnalysisResult> {
     AiAnalysisResultVo findByMatchId(String matchId);
 
+    PageVO<AiAnalysisResult> matchInfoHistoryList(AnalysisPageDTO analysisPageDTO);
 }

@@ -33,12 +33,12 @@ public class SimilarMatchServiceImpl implements SimilarMatchService {
     @Override
     public List<SimilarMatch> findSimilarMatch(String matchId) {
         List<HadList> hadList = hadListService.findHadList(matchId);
-        if(!CollectionUtils.isEmpty(hadList)){
+        if (!CollectionUtils.isEmpty(hadList)) {
             LambdaQueryWrapper<SimilarMatch> similarMatchLambdaQueryWrapper = new LambdaQueryWrapper<>();
             similarMatchLambdaQueryWrapper.eq(SimilarMatch::getMatchId, matchId);
             List<SimilarMatch> similarMatches = similarMatchMapper.selectList(similarMatchLambdaQueryWrapper);
-            if(CollectionUtils.isEmpty(similarMatches)){
-                dataService.loadSimilarMatch(Integer.parseInt(matchId));
+            if (CollectionUtils.isEmpty(similarMatches)) {
+                dataService.loadSimilarMatchByMatchId(matchId);
                 return similarMatchMapper.selectList(similarMatchLambdaQueryWrapper);
             }
             return similarMatches;

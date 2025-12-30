@@ -2,6 +2,8 @@ package cn.xingxing.service.impl;
 
 
 import cn.xingxing.service.MatchInfoService;
+import cn.xingxing.vo.MatchInfoVo;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import cn.xingxing.data.DataService;
 import cn.xingxing.domain.SubMatchInfo;
@@ -35,14 +37,12 @@ public class MatchInfoServiceImpl extends ServiceImpl<MatchInfoMapper,SubMatchIn
 
     @Override
     public List<SubMatchInfo> findCurrentDateMatch() {
-        dataService.loadMatchInfoData();
+       // dataService.loadMatchInfoData();
         LocalDate localDate = LocalDate.now();
         LambdaQueryWrapper<SubMatchInfo> queryWrapper = new LambdaQueryWrapper<>();
-
         queryWrapper.between(SubMatchInfo::getMatchDate, localDate, localDate.plusDays(1));
-
         List<SubMatchInfo> subMatchInfos = matchInfoMapper.selectList(queryWrapper);
-        List<SubMatchInfo> filteredList = subMatchInfos.stream()
+        return subMatchInfos.stream()
                 .filter(subMatchInfo -> {
                     // 构建比赛时间的LocalDateTime
                     String matchDate = subMatchInfo.getMatchDate();
@@ -59,6 +59,12 @@ public class MatchInfoServiceImpl extends ServiceImpl<MatchInfoMapper,SubMatchIn
                         return false; // 格式错误，跳过
                     }
                 }).collect(Collectors.toList());
-        return filteredList;
+    }
+
+    @Override
+    public SubMatchInfo findMatchById(String matchId) {
+        LambdaQueryWrapper<SubMatchInfo> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(SubMatchInfo::getMatchId, matchId);
+        return matchInfoMapper.selectOne(queryWrapper);
     }
 }

@@ -22,7 +22,7 @@ public class FootballApiConfig {
             "https://webapi.sporttery.cn/gateway/uniform/football/getMatchResultV1.qry?sportteryMatchId=%s&termLimits=5&tournamentFlag=0&homeAwayFlag=0";
     //比赛结果
     private String matchResultUrl = "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?" +
-            "method=result&pageNo=1&pageType=0&pageSize=100";
+            "method=result&pageNo=1&pageType=0&pageSize=200";
     //比赛特征
     private String matchFeatureUrl= "https://webapi.sporttery.cn/gateway/uniform/football/getMatchFeatureV1.qry?termLimits=10&sportteryMatchId=%s";
     //射手榜

@@ -11,38 +11,37 @@ public interface DataService {
     * 获取当日比赛信息
     *
     */
-   int loadMatchInfoData();
+   int syncMatchInfoData();
    /**
     * 获取当日比赛交锋记录
     *
     */
-   int loadHistoryData(Integer matchId);
+   int syncHistoryData();
+
+   int loadHistoryDataByMatchId(String matchId);
 
    /**
     * 获取当日比赛赔率变化信息
     */
-   int loadHadListData(Integer matchId);
-
-
+   int syncHadListData();
 
    /**
     * 获取当日比赛赔率变化信息
     */
-   int loadSimilarMatch(Integer matchId);
 
-   /**
-    * 获取比赛结果
-    * @param matchId
-    * @return
-    */
-   int loadMatchResult(Integer matchId);
+   int syncSimilarMatch();
+
+   int loadSimilarMatchByMatchId(String matchId);
+
+
+   int syncMatchResult();
 
    /**
     * 赛后复盘
-    * @param matchId
+    * @param
     * @return
     */
-   int afterMatchAnalysis(Integer matchId);
+   int afterMatchAnalysis();
 
    /**
     * 获取xg数据
@@ -50,4 +49,5 @@ public interface DataService {
     */
    int loadTeamStats();
 
+   void syncHadListByMatchId(String matchId);
 }
