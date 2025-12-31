@@ -65,13 +65,10 @@ public class DataServiceImpl implements DataService {
                 apiConfig.getMatchListUrl(),
                 apiConfig.getHttpConnectTimeout()
         );
-
         MatchInfoResponse matchInfoResponse = JSONObject.parseObject(matchListJson, MatchInfoResponse.class);
         List<MatchInfo> matchInfoList = matchInfoResponse.getValue().getMatchInfoList();
-        List<SubMatchInfo> validMatches = filterValidMatches(matchInfoList);
-        matchInfoMapper.insertOrUpdate(validMatches);
+        matchInfoMapper.insertOrUpdate(matchInfoList.stream().flatMap(list -> list.getSubMatchList().stream()).toList());
         this.syncHadListData();
-
         return 0;
     }
 
@@ -330,36 +327,10 @@ public class DataServiceImpl implements DataService {
                 .build();
     }
 
-    private List<SubMatchInfo> filterValidMatches(List<MatchInfo> matchInfoList) {
-        List<SubMatchInfo> validMatches = new ArrayList<>();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
-        for (MatchInfo matchInfo : matchInfoList) {
-            try {
-                Date matchDate = dateFormat.parse(matchInfo.getMatchDate() + " 23:59:59");
-                Date now = new Date();
-
-                Calendar calendar = Calendar.getInstance();
-                calendar.setTime(now);
-                calendar.add(Calendar.DAY_OF_MONTH, 2);
-                Date twoDaysLater = calendar.getTime();
-
-                // 只分析未来2天内的比赛
-                if (matchDate.before(twoDaysLater)) {
-                    validMatches.addAll(matchInfo.getSubMatchList());
-                }
-            } catch (ParseException e) {
-                log.warn("日期解析失败: {}", matchInfo.getMatchDate(), e);
-            }
-        }
-
-        return validMatches;
-    }
 
     public LambdaQueryWrapper<SubMatchInfo> buildMatchInfoQuery() {
         LambdaQueryWrapper<SubMatchInfo> queryWrapper = new LambdaQueryWrapper<>();
-        LocalDate localDate = LocalDate.now();
-        queryWrapper.between(SubMatchInfo::getMatchDate, localDate, localDate.plusDays(1));
+        queryWrapper.eq(SubMatchInfo::getMatchStatus, "2");
         return queryWrapper;
     }
 }

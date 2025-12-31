@@ -2,6 +2,7 @@ package cn.xingxing.web;
 
 import cn.xingxing.domain.HadList;
 import cn.xingxing.domain.SubMatchInfo;
+import cn.xingxing.dto.AnalysisResultDto;
 import cn.xingxing.dto.ApiResponse;
 import cn.xingxing.dto.MatchAnalysis;
 import cn.xingxing.service.FootballAnalysisService;
@@ -12,6 +13,7 @@ import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
@@ -39,7 +41,7 @@ public class FootballController {
     /**
      * 定时分析任务（每4小时执行一次）
      */
-   // @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:10000}", fixedDelayString = "${football.api.schedule-fixed-delay:14400000}")
+    @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:10000}", fixedDelayString = "${football.api.schedule-fixed-delay:14400000}")
     public void scheduledAnalysis() {
         log.info("定时分析任务启动");
 
@@ -83,7 +85,7 @@ public class FootballController {
     @GetMapping("/list")
     public ApiResponse<List<MatchInfoVo>> listMatchInfo() {
         List<MatchInfoVo> matchInfoVos = new ArrayList<>();
-        List<SubMatchInfo> currentDateMatch = matchInfoService.findCurrentDateMatch();
+        List<SubMatchInfo> currentDateMatch = matchInfoService.findMatchList();
         if(!CollectionUtils.isEmpty(currentDateMatch)) {
             matchInfoVos = JSONObject.parseArray(JSONObject.toJSONString(currentDateMatch),MatchInfoVo.class);
         }
@@ -101,9 +103,10 @@ public class FootballController {
 
 
     @PostMapping("/analysis/{matchId}")
-    public ApiResponse<String> analysisByMatchId(@PathVariable String matchId) {
+    public ApiResponse<AnalysisResultDto> analysisByMatchId(@PathVariable String matchId) {
         MatchAnalysis matchAnalysis = analysisService.analysisByMatchId(matchId);
-        return ApiResponse.success(matchAnalysis.getAiAnalysis());
+        AnalysisResultDto build = AnalysisResultDto.builder().aiAnalysis(matchAnalysis.getAiAnalysis()).timestamp(matchAnalysis.getTimestamp()).build();
+        return ApiResponse.success(build);
 
     }
 

@@ -17,6 +17,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -107,6 +108,10 @@ public class FootballAnalysisService {
                     .build();
             if(byMatchId != null) {
                 analysis.setAiAnalysis(byMatchId.getAiAnalysis());
+                LocalDateTime createTime = byMatchId.getCreateTime();
+                analysis.setTimestamp(createTime.atZone(ZoneId.systemDefault())
+                        .toInstant()
+                        .toEpochMilli());
                 return analysis;
             }
             // 获取近期交锋记录
@@ -125,9 +130,9 @@ public class FootballAnalysisService {
             if(byId!=null){
                 analysis.setInformation(byId.getInfo());
             }
-            // AI分析
             if ("ai".equals(aiInfo)) {
                 analysis.setAiAnalysis(aiService.analyzeMatch(analysis));
+                analysis.setTimestamp(System.currentTimeMillis());
             }
 
             return analysis;
@@ -262,12 +267,11 @@ public class FootballAnalysisService {
     }
 
     public void analyzeAndNotify(String aiInfo) {
-        List<SubMatchInfo> currentDateMatch = matchInfoService.findCurrentDateMatch();
-
+        List<SubMatchInfo> currentDateMatch = matchInfoService.findMatchList();
         List<List<SubMatchInfo>> lists = splitIntoBatches(currentDateMatch, 3);
         lists.forEach(list -> {
             List<MatchAnalysis> analyses = analyzeMatches(aiInfo, list);
-            notifyService.sendMsg(analyses);
+          //  notifyService.sendMsg(analyses);
         });
 
     }

@@ -23,4 +23,6 @@ public class AiAnalysisResultVo {
     private String aiAnalysis;
     private String matchResult;
     private String afterMatchAnalysis;
+    private LocalDateTime createTime;
+
 }

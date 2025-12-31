@@ -13,7 +13,7 @@ import java.util.List;
  * @Version: 1.0
  */
 public interface MatchInfoService extends IService<SubMatchInfo> {
-    List<SubMatchInfo> findCurrentDateMatch();
+    List<SubMatchInfo> findMatchList();
 
     SubMatchInfo findMatchById(String matchId);
 }

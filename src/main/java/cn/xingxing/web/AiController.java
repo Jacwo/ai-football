@@ -3,10 +3,9 @@ package cn.xingxing.web;
 
 import cn.xingxing.ai.Assistant;
 import cn.xingxing.ai.StreamingAssistant;
+import cn.xingxing.dto.ai.AiMessageRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
 /**
@@ -15,6 +14,7 @@ import reactor.core.publisher.Flux;
  * @Version: 1.0
  */
 @RestController
+@RequestMapping("/api")
 public class AiController {
     @Autowired
     Assistant assistant;
@@ -27,9 +27,8 @@ public class AiController {
         return assistant.chat(message);
     }
 
-    @GetMapping(value = "/streamingAssistant", produces = "text/event-stream; charset=utf-8")
-    public Flux<String> streamingAssistant(
-            @RequestParam(value = "message", defaultValue = "What is the current time?") String message) {
-        return streamingAssistant.chat(message);
+    @PostMapping(value = "/stream/chat", produces = "text/event-stream; charset=utf-8")
+    public Flux<String> streamingAssistant(@RequestBody AiMessageRequest message) {
+        return streamingAssistant.chat(message.getMessages().toString());
     }
 }
