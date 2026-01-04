@@ -58,7 +58,7 @@ public class FootballController {
 
     @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:100000}", fixedDelayString = "${football.api.schedule-fixed-delay:5400000}")
     public void syncMatchInfoData() {
-        log.info("定时分析任务启动");
+        log.info("定时同步比赛信息启动");
         dataService.syncMatchInfoData();
         dataService.syncMatchResult();
     }
@@ -67,7 +67,7 @@ public class FootballController {
 
     @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:100000}", fixedDelayString = "${football.api.schedule-fixed-delay:600000}")
     public void syncNeedData() {
-        log.info("定时分析任务启动");
+        log.info("定时同步赔率信息启动");
         dataService.syncHadListData();
     }
 
