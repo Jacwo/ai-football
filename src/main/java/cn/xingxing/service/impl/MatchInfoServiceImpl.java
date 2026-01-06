@@ -38,7 +38,9 @@ public class MatchInfoServiceImpl extends ServiceImpl<MatchInfoMapper,SubMatchIn
     @Override
     public List<SubMatchInfo> findMatchList() {
         LambdaQueryWrapper<SubMatchInfo> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(SubMatchInfo::getMatchStatus, "2").or().eq(SubMatchInfo::getMatchStatus, "3");
+        queryWrapper.eq(SubMatchInfo::getMatchStatus, "2")
+                .or(wq -> wq.eq(SubMatchInfo::getMatchStatus, "3")
+                .eq(SubMatchInfo::getMatchStatusName, "暂停销售"));
         return matchInfoMapper.selectList(queryWrapper);
     }
 
