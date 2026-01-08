@@ -64,12 +64,12 @@ public class FootballAnalysisService {
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
-    public List<MatchAnalysis> analyzeMatches(String aiInfo, List<SubMatchInfo> validMatches) {
+    public List<MatchAnalysis> analyzeMatches(List<SubMatchInfo> validMatches) {
         log.info("开始分析比赛数据...");
         try {
             List<CompletableFuture<MatchAnalysis>> futures = validMatches.stream()
                     .map(match -> CompletableFuture.supplyAsync(() ->
-                            analyzeSingleMatch(match, aiInfo), footballExecutor))
+                            analyzeSingleMatch(match), footballExecutor))
                     .toList();
 
             // 4. 等待所有分析完成
@@ -95,7 +95,7 @@ public class FootballAnalysisService {
     }
 
 
-    private MatchAnalysis analyzeSingleMatch(SubMatchInfo match, String aiInfo) {
+    private MatchAnalysis analyzeSingleMatch(SubMatchInfo match) {
         try {
             String matchId = String.valueOf(match.getMatchId());
             AiAnalysisResultVo byMatchId = aiAnalysisResultService.findByMatchId(matchId);
@@ -107,7 +107,7 @@ public class FootballAnalysisService {
                     .league(match.getLeagueAbbName())
                     .matchId(matchId)
                     .build();
-            if(byMatchId != null) {
+            if (byMatchId != null) {
                 analysis.setAiAnalysis(byMatchId.getAiAnalysis());
                 LocalDateTime createTime = byMatchId.getCreateTime();
                 analysis.setTimestamp(createTime.atZone(ZoneId.systemDefault())
@@ -119,23 +119,21 @@ public class FootballAnalysisService {
             analysis.setRecentMatches(historicalMatchService.findHistoricalMatch(matchId));
 
             // 获取赔率历史
-            analysis.setOddsHistory(getOddsHistory(matchId));
+            analysis.setSimilarMatches(getSimilarMatches(matchId));
             //特征数据
             analysis.setMatchAnalysisData(getMatchAnalysisData(matchId));
             //近期比赛
             analysis.setMatchHistoryData(getMatchHistoryData(matchId));
             analysis.setHadLists(hadListService.findHadList(matchId));
-            analysis.setHomeTeamStats(teamStatsService.selectByTeamName(match.getHomeTeamAbbName(),"home"));
-            analysis.setAwayTeamStats(teamStatsService.selectByTeamName(match.getAwayTeamAbbName(),"away"));
+            analysis.setHhadLists(hadListService.findHHadList(matchId));
+            analysis.setHomeTeamStats(teamStatsService.selectByTeamName(match.getHomeTeamAbbName(), "home"));
+            analysis.setAwayTeamStats(teamStatsService.selectByTeamName(match.getAwayTeamAbbName(), "away"));
             Information byId = informationService.getById(matchId);
-            if(byId!=null){
+            if (byId != null) {
                 analysis.setInformation(byId.getInfo());
             }
-            if ("ai".equals(aiInfo)) {
-                analysis.setAiAnalysis(aiService.analyzeMatch(analysis));
-                analysis.setTimestamp(System.currentTimeMillis());
-            }
-
+            analysis.setAiAnalysis(aiService.analyzeMatch(analysis));
+            analysis.setTimestamp(System.currentTimeMillis());
             return analysis;
 
         } catch (Exception e) {
@@ -146,7 +144,7 @@ public class FootballAnalysisService {
     }
 
     private MatchHistoryData getMatchHistoryData(String matchId) {
-        String url = String.format(apiConfig.getMatchHistoryUrl(),matchId);
+        String url = String.format(apiConfig.getMatchHistoryUrl(), matchId);
         String response = HttpClientUtil.doGet(url, apiConfig.getHttpConnectTimeout());
         MatchHistoryResponse matchAnalysisResponse = JSONObject.parseObject(response, MatchHistoryResponse.class);
         return matchAnalysisResponse.getValue();
@@ -155,7 +153,7 @@ public class FootballAnalysisService {
 
     private MatchAnalysisData getMatchAnalysisData(String matchId) {
         try {
-            String url = String.format(apiConfig.getMatchFeatureUrl(),matchId);
+            String url = String.format(apiConfig.getMatchFeatureUrl(), matchId);
             String response = HttpClientUtil.doGet(url, apiConfig.getHttpConnectTimeout());
             MatchAnalysisResponse matchAnalysisResponse = JSONObject.parseObject(response, MatchAnalysisResponse.class);
             return matchAnalysisResponse.getValue();
@@ -212,25 +210,9 @@ public class FootballAnalysisService {
                 .build();
     }
 
-    private List<OddsInfo> getOddsHistory(String matchId) {
+    private List<SimilarMatch> getSimilarMatches(String matchId) {
         try {
-
-            List<HadList> hhadList = hadListService.findHadList(matchId);
-
-            if (!CollectionUtils.isEmpty(hhadList)) {
-                HadList latestOdds = hhadList.getLast();
-                // 获取相似比赛
-                List<SimilarMatch> similarMatches = similarMatchService.findSimilarMatch(matchId);
-
-                OddsInfo oddsInfo = OddsInfo.builder()
-                        .homeWin(Double.valueOf(latestOdds.getH()))
-                        .draw(Double.valueOf(latestOdds.getD()))
-                        .awayWin(Double.valueOf(latestOdds.getA()))
-                        .similarMatches(similarMatches)
-                        .build();
-
-                return Collections.singletonList(oddsInfo);
-            }
+            return similarMatchService.findSimilarMatch(matchId);
         } catch (Exception e) {
             log.error("获取赔率历史失败: {}", matchId, e);
         }
@@ -267,12 +249,12 @@ public class FootballAnalysisService {
                 .build();
     }
 
-    public void analyzeAndNotify(String aiInfo) {
+    public void analyzeAndNotify() {
         List<SubMatchInfo> currentDateMatch = matchInfoService.findMatchList();
         List<List<SubMatchInfo>> lists = splitIntoBatches(currentDateMatch, 3);
         lists.forEach(list -> {
-            List<MatchAnalysis> analyses = analyzeMatches(aiInfo, list);
-          //  notifyService.sendMsg(analyses);
+            List<MatchAnalysis> analyses = analyzeMatches(list);
+            //  notifyService.sendMsg(analyses);
         });
 
     }
@@ -288,13 +270,9 @@ public class FootballAnalysisService {
     }
 
 
-
-
-
-
     public MatchAnalysis analysisByMatchId(String matchId) {
         SubMatchInfo byId = matchInfoService.getById(matchId);
-        return analyzeSingleMatch(byId, "ai");
+        return analyzeSingleMatch(byId);
     }
 
     public Flux<String> analysisByMatchIdStream(String matchId) {
@@ -318,16 +296,17 @@ public class FootballAnalysisService {
         analysis.setRecentMatches(historicalMatchService.findHistoricalMatch(matchId));
 
         // 获取赔率历史
-        analysis.setOddsHistory(getOddsHistory(matchId));
+        analysis.setSimilarMatches(getSimilarMatches(matchId));
         //特征数据
         analysis.setMatchAnalysisData(getMatchAnalysisData(matchId));
         //近期比赛
         analysis.setMatchHistoryData(getMatchHistoryData(matchId));
         analysis.setHadLists(hadListService.findHadList(matchId));
-        analysis.setHomeTeamStats(teamStatsService.selectByTeamName(match.getHomeTeamAbbName(),"home"));
-        analysis.setAwayTeamStats(teamStatsService.selectByTeamName(match.getAwayTeamAbbName(),"away"));
+        analysis.setHhadLists(hadListService.findHHadList(matchId));
+        analysis.setHomeTeamStats(teamStatsService.selectByTeamName(match.getHomeTeamAbbName(), "home"));
+        analysis.setAwayTeamStats(teamStatsService.selectByTeamName(match.getAwayTeamAbbName(), "away"));
         Information byId = informationService.getById(matchId);
-        if(byId!=null){
+        if (byId != null) {
             analysis.setInformation(byId.getInfo());
         }
         return aiService.analyzeMatchStream(analysis);

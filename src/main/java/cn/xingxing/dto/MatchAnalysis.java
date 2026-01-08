@@ -2,6 +2,7 @@ package cn.xingxing.dto;
 
 import cn.xingxing.domain.HadList;
 import cn.xingxing.domain.HistoricalMatch;
+import cn.xingxing.domain.SimilarMatch;
 import cn.xingxing.domain.TeamStats;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,7 +22,7 @@ public class MatchAnalysis {
     private String awayTeam;
     private LocalDateTime matchTime;
     private String league;
-    private List<OddsInfo> oddsHistory;
+    private List<SimilarMatch> similarMatches;;
     private List<HistoricalMatch> recentMatches;
     private MatchAnalysisData matchAnalysisData;
     private MatchHistoryData  matchHistoryData;
@@ -29,6 +30,8 @@ public class MatchAnalysis {
     private TeamStats homeTeamStats;
     private TeamStats awayTeamStats;
     private List<HadList> hadLists;
+    private List<HadList> hhadLists;
+
     private String information;
     private long timestamp;
 }

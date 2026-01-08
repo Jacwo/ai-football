@@ -22,5 +22,5 @@ public class OddsInfo {
     private Double homeWin;
     private Double draw;
     private Double awayWin;
-    private List<SimilarMatch> similarMatches;
+
 }

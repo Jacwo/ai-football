@@ -48,7 +48,7 @@ public class FootballController {
 
         footballExecutor.execute(() -> {
             try {
-                analysisService.analyzeAndNotify("ai");
+                analysisService.analyzeAndNotify();
             } catch (Exception e) {
                 log.error("定时分析任务异常", e);
             }

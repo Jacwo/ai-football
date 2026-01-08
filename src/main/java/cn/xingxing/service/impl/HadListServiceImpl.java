@@ -9,7 +9,6 @@ import cn.xingxing.mapper.HadListMapperMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -27,10 +26,24 @@ public class HadListServiceImpl implements HadListService {
     private DataService dataService;
 
     @Override
-    public List<HadList> findHadList(String matchId) {
+    public List<HadList>  findHadList(String matchId) {
         LambdaQueryWrapper<HadList> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(HadList::getMatchId, matchId);
         queryWrapper.eq(HadList::getGoalLine,"");
+        List<HadList> hadLists = hadListMapperMapper.selectList(queryWrapper);
+        if (hadLists.isEmpty()) {
+            dataService.syncHadListByMatchId(matchId);
+            hadLists = hadListMapperMapper.selectList(queryWrapper);
+        }
+        return hadLists;
+    }
+
+
+    @Override
+    public List<HadList>  findHHadList(String matchId) {
+        LambdaQueryWrapper<HadList> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(HadList::getMatchId, matchId);
+        queryWrapper.ne(HadList::getGoalLine,"");
         List<HadList> hadLists = hadListMapperMapper.selectList(queryWrapper);
         if (hadLists.isEmpty()) {
             dataService.syncHadListByMatchId(matchId);

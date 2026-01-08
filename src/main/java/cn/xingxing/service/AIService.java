@@ -1,6 +1,7 @@
 package cn.xingxing.service;
 
 import cn.xingxing.ai.StreamingAssistant;
+import cn.xingxing.domain.HadList;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import cn.xingxing.ai.Assistant;
 import cn.xingxing.domain.AiAnalysisResult;
@@ -25,18 +26,23 @@ public class AIService {
     private Assistant assistant;
 
     @Autowired
-    private StreamingAssistant  streamingAssistant;
+    private StreamingAssistant streamingAssistant;
 
     @Autowired
     private AiAnalysisResultMapper aiAnalysisResultMapper;
 
     Pattern win = Pattern.compile("【([^】]+)】");
     Pattern score = Pattern.compile("\\{([^}]+)\\}");
-
+    public static List<String> league = List.of("意甲", "英超", "西甲", "德甲", "法甲");
 
 
     public String analyzeMatch(MatchAnalysis analysis) {
-        String prompt = buildAnalysisPrompt(analysis);
+        String prompt;
+        if (league.contains(analysis.getLeague())) {
+            prompt = buildAnalysisPromptWithXg(analysis);
+        } else {
+            prompt = buildAnalysisPrompt(analysis);
+        }
         log.info("prompt:{}", prompt);
         String chat = assistant.chat(prompt);
         AiAnalysisResult aiAnalysisResult = new AiAnalysisResult();
@@ -44,29 +50,28 @@ public class AIService {
         aiAnalysisResult.setAwayTeam(analysis.getAwayTeam());
         aiAnalysisResult.setHomeTeam(analysis.getHomeTeam());
         aiAnalysisResult.setMatchTime(analysis.getMatchTime());
-        if (!CollectionUtils.isEmpty(analysis.getOddsHistory())) {
-            aiAnalysisResult.setDraw(String.valueOf(analysis.getOddsHistory().getFirst().getDraw()));
-            aiAnalysisResult.setAwayWin(String.valueOf(analysis.getOddsHistory().getFirst().getAwayWin()));
-            aiAnalysisResult.setHomeWin(String.valueOf(analysis.getOddsHistory().getFirst().getHomeWin()));
+        if (!CollectionUtils.isEmpty(analysis.getHadLists())) {
+            aiAnalysisResult.setDraw(String.valueOf(analysis.getHadLists().getFirst().getD()));
+            aiAnalysisResult.setAwayWin(String.valueOf(analysis.getHadLists().getFirst().getA()));
+            aiAnalysisResult.setHomeWin(String.valueOf(analysis.getHadLists().getFirst().getH()));
         }
         aiAnalysisResult.setAiAnalysis(chat);
         System.out.println(chat);
         Matcher matcher = score.matcher(chat);
-        if(matcher.find()){
-            System.out.println("ai比分---"+ matcher.group(1));
-            aiAnalysisResult.setAiScore(matcher.group(1).replace("{","").replace("}",""));
+        if (matcher.find()) {
+            System.out.println("ai比分---" + matcher.group(1));
+            aiAnalysisResult.setAiScore(matcher.group(1).replace("{", "").replace("}", ""));
         }
         Matcher matcher2 = win.matcher(chat);
-        if(matcher2.find()){
-            System.out.println("ai胜负---"+ matcher2.group(1));
-            aiAnalysisResult.setAiResult(matcher2.group(1).replace("【","").replace("】",""));
+        if (matcher2.find()) {
+            System.out.println("ai胜负---" + matcher2.group(1));
+            aiAnalysisResult.setAiResult(matcher2.group(1).replace("【", "").replace("】", ""));
 
         }
         aiAnalysisResultMapper.insert(aiAnalysisResult);
         log.info("比赛分析结果： {}", chat);
         return chat;
     }
-
 
 
     private String buildAnalysisPrompt(MatchAnalysis analysis) {
@@ -77,6 +82,69 @@ public class AIService {
                         - 比赛时间：%s    
                         最新赔率数据：
                         主队：%s 平局：%s 客队：%s  
+                        让球赔率数据
+                        让 %s 主队：%s 平局：%s 客队：%s  
+                        同赔率比赛结果
+                        %s    
+                        近期交锋：
+                        %s
+                        主队近期状态与质量
+                        %s
+                        客队近期状态与质量
+                        %s
+                        比赛战术与数据特征
+                        %s
+                        赔率变化数据
+                        %s
+                        最新情报
+                        %s    
+                        请从以下维度进行综合分析：
+                        1. **赔率分析**：解读当前赔率反映的市场预期和胜负概率分布
+                        2. **基本面分析**：基于历史交锋记录分析两队战术风格、心理优势和近期状态
+                        3. **多因素分析**：基于近期比赛特征、比赛近况分析
+                        4. **xG数据分析** 基于xG数据分析(如果有)
+                        4. **进球预期**：结合两队攻防特点预测可能的进球数范围  
+                        根据本次比赛数据的特点（例如，是否有突出的xG数据、交锋记录是否久远、赔率变动是否剧烈），动态调整各分析维度的权重，
+                        你不要谁的赔率低你就猜测谁赢，考虑冷门场景，并说明理由。     
+                        请给出1个比分推荐考虑冷门场景，以及胜平负推荐使用(主胜、平局、客胜表示)，比分结果使用{}修饰，胜负推荐使用【】修饰”.
+                        """,
+                analysis.getHomeTeam(), analysis.getAwayTeam(),
+                analysis.getLeague(), analysis.getMatchTime(),
+                getH(analysis.getHadLists()),
+                getD(analysis.getHadLists()),
+                getA(analysis.getHadLists()),
+                getGoline(analysis.getHhadLists()),
+                getH(analysis.getHhadLists()),
+                getD(analysis.getHhadLists()),
+                getA(analysis.getHhadLists()),
+                analysis.getSimilarMatches(),
+                analysis.getRecentMatches(),
+                analysis.getMatchHistoryData().getHome(),
+                analysis.getMatchHistoryData().getAway(),
+                analysis.getMatchAnalysisData(),
+                analysis.getHadLists(),
+                analysis.getInformation()
+        );
+    }
+
+    private String getGoline(List<HadList> hhadLists) {
+        if(!CollectionUtils.isEmpty(hhadLists)){
+            return hhadLists.getFirst().getGoalLine();
+        }else
+            return "";
+    }
+
+
+    private String buildAnalysisPromptWithXg(MatchAnalysis analysis) {
+        return String.format("""
+                        请对 %s vs %s 这场比赛进行专业分析。 
+                        比赛基本信息：
+                        - 联赛：%s
+                        - 比赛时间：%s    
+                        最新赔率数据：
+                        主队：%s 平局：%s 客队：%s  
+                        让球赔率数据
+                        让 %s 主队：%s 平局：%s 客队：%s  
                         同赔率比赛结果
                         %s    
                         近期交锋：
@@ -107,10 +175,14 @@ public class AIService {
                         """,
                 analysis.getHomeTeam(), analysis.getAwayTeam(),
                 analysis.getLeague(), analysis.getMatchTime(),
-                analysis.getOddsHistory().getFirst().getHomeWin(),
-                analysis.getOddsHistory().getFirst().getDraw(),
-                analysis.getOddsHistory().getFirst().getAwayWin(),
-                analysis.getOddsHistory(),
+                getH(analysis.getHadLists()),
+                getD(analysis.getHadLists()),
+                getA(analysis.getHadLists()),
+                getGoline(analysis.getHhadLists()),
+                getH(analysis.getHhadLists()),
+                getD(analysis.getHhadLists()),
+                getA(analysis.getHhadLists()),
+                analysis.getSimilarMatches(),
                 analysis.getRecentMatches(),
                 analysis.getMatchHistoryData().getHome(),
                 analysis.getMatchHistoryData().getAway(),
@@ -120,6 +192,30 @@ public class AIService {
                 analysis.getAwayTeamStats(),
                 analysis.getInformation()
         );
+    }
+
+    private String getA(List<HadList> hadLists) {
+        if(!CollectionUtils.isEmpty(hadLists)) {
+            return hadLists.getFirst().getA();
+        }else{
+            return "";
+        }
+    }
+
+    private String getD(List<HadList> hadLists) {
+        if(!CollectionUtils.isEmpty(hadLists)) {
+            return hadLists.getFirst().getD();
+        }else{
+            return "";
+        }
+    }
+
+    private String getH(List<HadList> hadLists) {
+        if(!CollectionUtils.isEmpty(hadLists)) {
+            return hadLists.getFirst().getH();
+        }else{
+            return "";
+        }
     }
 
 
@@ -164,7 +260,7 @@ public class AIService {
     }
 
 
-    String getAsk(){
+    String getAsk() {
         String ask = """
                     请对 %s vs %s 这场比赛进行专业分析。 
                         比赛基本信息：

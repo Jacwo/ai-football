@@ -12,4 +12,6 @@ import java.util.List;
  */
 public interface HadListService {
     List<HadList> findHadList(String matchId);
+
+    List<HadList>  findHHadList(String matchId);
 }
