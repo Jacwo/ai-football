@@ -20,4 +20,10 @@ public class GlobalExceptionHandler {
         log.warn("参数异常: {}", e.getMessage());
         return ApiResponse.error("参数错误: " + e.getMessage());
     }
+
+    @ExceptionHandler(CommonException.class)
+    public ApiResponse<?> handleCommonException(CommonException e) {
+        return ApiResponse.failed(e.getMessage());
+    }
+
 }

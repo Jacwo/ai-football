@@ -31,4 +31,13 @@ public class ApiResponse<T> {
                 .timestamp(System.currentTimeMillis())
                 .build();
     }
+
+
+    public static <T> ApiResponse<T> failed(String message) {
+        return ApiResponse.<T>builder()
+                .code(50000)
+                .message(message)
+                .timestamp(System.currentTimeMillis())
+                .build();
+    }
 }
