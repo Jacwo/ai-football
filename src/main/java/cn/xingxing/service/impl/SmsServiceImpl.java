@@ -82,9 +82,6 @@ public class SmsServiceImpl extends ServiceImpl<SmsInfoMapper, SmsInfo> implemen
         LambdaQueryWrapper<SmsInfo> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(SmsInfo::getPhone, phone);
         queryWrapper.eq(SmsInfo::getCode, code);
-        SmsInfo one = this.getOne(queryWrapper);
-        if(one !=null){
-            this.removeById(one.getId());
-        }
+        this.getBaseMapper().deleteByPhoneAndCode(phone,code);
     }
 }
