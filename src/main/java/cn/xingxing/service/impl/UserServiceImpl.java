@@ -16,7 +16,6 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -59,6 +58,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             loginUserResponse.setUserInfo(userInfo);
             return loginUserResponse;
         }
-        throw new CommonException(10002, "发送验证码异常");
+        throw new CommonException(10002, "验证码错误");
     }
 }

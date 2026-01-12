@@ -71,10 +71,7 @@ public class SmsServiceImpl extends ServiceImpl<SmsInfoMapper, SmsInfo> implemen
         queryWrapper.eq(SmsInfo::getPhone, phone);
         queryWrapper.eq(SmsInfo::getCode, code);
         List<SmsInfo> list = this.list(queryWrapper);
-        if (!list.isEmpty()) {
-            return true;
-        }
-        return false;
+        return !list.isEmpty();
     }
 
     @Override
