@@ -23,13 +23,13 @@ public class UnderstatAPI {
           //  String data1 = UnderstatScraper.getRawPageContent("EPL", 2025);
           //  System.out.println("<UNK>" + data1);
             //EPL 英超 La_liga 西甲
-            Map<String, JsonNode> data = UnderstatScraper.scrapeWithSelenium("La_liga", 2025);
+            Map<String, JsonNode> data = UnderstatScraper.scrapeWithSelenium("EPL", 2025);
 
             if (!data.isEmpty()) {
                 System.out.println("成功获取到 " + data.size() + " 个数据集");
 
                 // 处理球员数据
-                if (data.containsKey("playersData")) {
+        /*        if (data.containsKey("playersData")) {
                     JsonNode playersData = data.get("playersData");
                     List<PlayerStats> players = UnderstatDataParser.parsePlayerStats(playersData);
 
@@ -46,7 +46,7 @@ public class UnderstatAPI {
                     // 保存到文件
                     saveToFile(playersData, "epl_2025_players.json");
                 }
-
+*/
                 // 处理球队数据
                 if (data.containsKey("teamsData")) {
                     JsonNode teamsData = data.get("teamsData");
@@ -56,19 +56,19 @@ public class UnderstatAPI {
             }
 
             // 示例2：获取球员数据
-            System.out.println("\n正在获取球员数据...");
+          /*  System.out.println("\n正在获取球员数据...");
             JsonNode playerData = UnderstatScraper.getPlayerStats(12345); // 替换为真实球员ID
             if (playerData != null) {
                 System.out.println("球员数据获取成功");
                 saveToFile(playerData, "player_12345.json");
             }
-
+*/
             // 示例3：使用Selenium获取数据（如果需要JavaScript渲染）
-            System.out.println("\n使用Selenium获取完整数据...");
+      /*      System.out.println("\n使用Selenium获取完整数据...");
             Map<String, JsonNode> fullData = UnderstatScraper.scrapeWithSelenium("La_liga", 2025);
             if (!fullData.isEmpty()) {
                 System.out.println("Selenium获取到 " + fullData.size() + " 个数据集");
-            }
+            }*/
 
         } catch (Exception e) {
             e.printStackTrace();

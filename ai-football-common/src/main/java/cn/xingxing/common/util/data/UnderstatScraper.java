@@ -225,7 +225,7 @@ public class UnderstatScraper {
             // 方法1：通过JavaScript直接获取数据
             String pageSource = driver.getPageSource();
             Document doc = Jsoup.parse(pageSource);
-            result.putAll(extractAllDataFromPage(doc));
+          //  result.putAll(extractAllDataFromPage(doc));
 
             // 方法2：执行JavaScript获取全局变量
             result.putAll(extractDataViaJavaScript(driver));
@@ -250,8 +250,8 @@ public class UnderstatScraper {
 
         // 尝试获取各种可能的数据变量
         String[] dataVars = {
-                "playersData", "teamsData", "matchesData",
-                "rostersData", "statsData", "tableData"
+                "playersData", "teamsData"/*, "tableChempData",
+                "home", "away", "tableData"*/
         };
 
         for (String varName : dataVars) {
