@@ -274,10 +274,10 @@ public class EPLDataGenerator {
     private static void saveToFile( String filename,String data) {
         try {
             // 获取classpath的根目录路径（资源目录）
-            URL resourceUrl = UnderstatScraper.class.getClassLoader().getResource("");
-            File dataDir;
+           // URL resourceUrl = UnderstatScraper.class.getClassLoader().getResource("");
+            File dataDir =new File("/app/data");
 
-            if (resourceUrl != null && resourceUrl.getProtocol().equals("file")) {
+         /*   if (resourceUrl != null && resourceUrl.getProtocol().equals("file")) {
                 // 开发环境：资源在文件系统中
                 String decodedPath = URLDecoder.decode(resourceUrl.getPath(), StandardCharsets.UTF_8);
                 File resourcesDir = new File(decodedPath);
@@ -286,7 +286,7 @@ public class EPLDataGenerator {
                 // 生产环境（jar包）或无法获取资源目录时，使用当前工作目录下的data目录
                 dataDir = new File("data");
             }
-
+*/
             if (!dataDir.exists()) {
                 dataDir.mkdirs();
             }
