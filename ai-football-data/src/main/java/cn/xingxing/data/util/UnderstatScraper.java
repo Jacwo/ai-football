@@ -35,12 +35,11 @@ public class UnderstatScraper {
             log.info("path:" + path);*/
             // 设置ChromeDriver路径（需要先下载chromedriver）
             // "D:\\personal\\ai-football\\ai-football-starter\\src\\main\\resources\\tools\\chromedriver.exe"
-
+            String shellPath = "/app/tools/chrome-headless-shell-linux64/chrome-headless-shell";
             System.setProperty("webdriver.chrome.driver","/app/tools/chromedriver");
-          //  WebDriverManager.chromedriver().setup();
 
             ChromeOptions options = new ChromeOptions();
-           // ChromeOptions options = new ChromeOptions();
+            options.setBinary(shellPath);
             options.addArguments("--headless"); // 无头模式
             options.addArguments("--disable-gpu");
             options.addArguments("--no-sandbox");
