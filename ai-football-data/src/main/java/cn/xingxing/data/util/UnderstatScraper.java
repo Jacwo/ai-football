@@ -36,7 +36,7 @@ public class UnderstatScraper {
             // 设置ChromeDriver路径（需要先下载chromedriver）
             // "D:\\personal\\ai-football\\ai-football-starter\\src\\main\\resources\\tools\\chromedriver.exe"
 
-            System.setProperty("webdriver.chrome.driver","/app/tools/chromedriver.exe");
+            System.setProperty("webdriver.chrome.driver","/app/tools/chromedriver");
           //  WebDriverManager.chromedriver().setup();
 
             ChromeOptions options = new ChromeOptions();
