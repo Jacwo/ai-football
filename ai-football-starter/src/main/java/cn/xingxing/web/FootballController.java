@@ -47,7 +47,7 @@ public class FootballController {
     /**
      * 定时分析任务（每4小时执行一次）
      */
-   // @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:10000}", fixedDelayString = "${football.api.schedule-fixed-delay:14400000}")
+    @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:10000}", fixedDelayString = "${football.api.schedule-fixed-delay:14400000}")
     public void scheduledAnalysis() {
         log.info("定时分析任务启动");
 
@@ -61,7 +61,7 @@ public class FootballController {
     }
 
 
-   // @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:200000}", fixedDelayString = "${football.api.schedule-fixed-delay:360000}")
+    @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:200000}", fixedDelayString = "${football.api.schedule-fixed-delay:360000}")
     public void syncMatchInfoData() {
         log.info("定时同步比赛信息启动");
         dataService.syncMatchInfoData();
@@ -70,14 +70,14 @@ public class FootballController {
 
 
 
-  //  @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:20000}", fixedDelayString = "${football.api.schedule-fixed-delay:60000}")
+    @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:20000}", fixedDelayString = "${football.api.schedule-fixed-delay:60000}")
     public void syncNeedData() {
         log.info("定时同步赔率信息启动");
         dataService.syncHadListData();
     }
 
 
-  //  @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:120000}", fixedDelayString = "${football.api.schedule-fixed-delay:260000}")
+    @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:120000}", fixedDelayString = "${football.api.schedule-fixed-delay:260000}")
     public void syncSimilarMatch() {
         log.info("定时同步同奖信息启动");
         dataService.syncSimilarMatch();
@@ -89,11 +89,11 @@ public class FootballController {
         log.info("定时同步Xg信息启动");
 
         List<String> list = new ArrayList<>();
-        //list.add("EPL");//英超
+        list.add("EPL");//英超
         list.add("La_liga");//西甲
-        //list.add("Ligue_1");//法甲
-        //list.add("Bundesliga");//德甲
-        //list.add("Serie_A");//意甲
+        list.add("Ligue_1");//法甲
+        list.add("Bundesliga");//德甲
+        list.add("Serie_A");//意甲
         list.forEach(league -> {
             teamStatsService.syncXgData(league, "2025");
             EPLDataGenerator.saveXgData(league);

@@ -162,9 +162,9 @@ public class EPLDataGenerator {
     public static String readFromDataDir(String fileName) throws IOException {
         try {
             URL resourceUrl = EPLDataGenerator.class.getClassLoader().getResource("");
-            File dataDir;
+            File dataDir =new File("/app/data");
 
-            if (resourceUrl != null && resourceUrl.getProtocol().equals("file")) {
+            /*if (resourceUrl != null && resourceUrl.getProtocol().equals("file")) {
                 // 开发环境：资源在文件系统中
                 String decodedPath = URLDecoder.decode(resourceUrl.getPath(), StandardCharsets.UTF_8);
                 File resourcesDir = new File(decodedPath);
@@ -172,7 +172,7 @@ public class EPLDataGenerator {
             } else {
                 // 生产环境（jar包）或无法获取资源目录时，使用当前工作目录下的data目录
                 dataDir = new File("data");
-            }
+            }*/
 
             File inputFile = new File(dataDir, fileName);
 

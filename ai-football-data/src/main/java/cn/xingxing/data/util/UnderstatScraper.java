@@ -28,15 +28,15 @@ public class UnderstatScraper {
         WebDriver driver = null;
 
         try {
-           String path = UnderstatScraper.class.getClassLoader().getResource("tools/chromedriver.exe").getPath();
+           /*String path = UnderstatScraper.class.getClassLoader().getResource("tools/chromedriver.exe").getPath();
             if (path.startsWith("/") && path.charAt(2) == ':') {
                 path = path.substring(1);
             }
-            log.info("path:" + path);
+            log.info("path:" + path);*/
             // 设置ChromeDriver路径（需要先下载chromedriver）
             // "D:\\personal\\ai-football\\ai-football-starter\\src\\main\\resources\\tools\\chromedriver.exe"
 
-            System.setProperty("webdriver.chrome.driver",path);
+            System.setProperty("webdriver.chrome.driver","/app/tools/chromedriver.exe");
           //  WebDriverManager.chromedriver().setup();
 
             ChromeOptions options = new ChromeOptions();
