@@ -118,7 +118,7 @@ public class TeamStatsServiceImpl implements TeamStatsService {
     @Override
     public void loadTeamStatsAway(String name) {
         try {
-            String fileName = name + "_home.json";
+            String fileName = name + "_away.json";
             String jsonContent = EPLDataGenerator.readFromDataDir(fileName);
             List<TeamStats> teamStatsList = JSONObject.parseArray(jsonContent, TeamStats.class);
 
