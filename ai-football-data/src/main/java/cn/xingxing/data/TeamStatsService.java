@@ -17,4 +17,7 @@ public interface TeamStatsService {
     void loadTeamStatsHome(String f);
 
     void loadTeamStatsAway(String f);
+
+
+    void syncXgData(String league ,String year);
 }

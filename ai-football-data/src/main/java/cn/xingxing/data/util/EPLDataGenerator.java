@@ -1,10 +1,14 @@
-package cn.xingxing.common.util.data;
-import com.fasterxml.jackson.databind.ObjectMapper;
+package cn.xingxing.data.util;
+
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.io.*;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -144,15 +148,71 @@ public class EPLDataGenerator {
         }
     }
 
-    // 从resource目录读取文件
-    private static String readResourceFile(String fileName) throws IOException {
+    public static String readResourceFile(String fileName) throws IOException {
+        // 尝试从保存数据的目录读取（与saveToFile使用相同的逻辑）
+        String content = readFromDataDir(fileName);
+        if (content != null) {
+            return content;
+        }
+
+        // 如果数据目录不存在或文件不存在，则回退到classpath资源目录
+        return readFromClasspath(fileName);
+    }
+
+    public static String readFromDataDir(String fileName) throws IOException {
+        try {
+            URL resourceUrl = EPLDataGenerator.class.getClassLoader().getResource("");
+            File dataDir;
+
+            if (resourceUrl != null && resourceUrl.getProtocol().equals("file")) {
+                // 开发环境：资源在文件系统中
+                String decodedPath = URLDecoder.decode(resourceUrl.getPath(), StandardCharsets.UTF_8);
+                File resourcesDir = new File(decodedPath);
+                dataDir = new File(resourcesDir, "data");
+            } else {
+                // 生产环境（jar包）或无法获取资源目录时，使用当前工作目录下的data目录
+                dataDir = new File("data");
+            }
+
+            File inputFile = new File(dataDir, fileName);
+
+            if (inputFile.exists()) {
+                return readFileContent(inputFile);
+            } else {
+                return null; // 文件不存在于数据目录
+            }
+        } catch (Exception e) {
+            // 读取数据目录失败时，回退到classpath
+            return null;
+        }
+    }
+
+    private static String readFromClasspath(String fileName) throws IOException {
+        // 先尝试直接从根目录读取
         InputStream inputStream = EPLDataGenerator.class.getClassLoader().getResourceAsStream(fileName);
+
+        // 如果找不到，再尝试从data子目录读取
+        if (inputStream == null) {
+            inputStream = EPLDataGenerator.class.getClassLoader().getResourceAsStream("data/" + fileName);
+        }
+
         if (inputStream == null) {
             throw new FileNotFoundException("Resource file not found: " + fileName);
         }
 
         StringBuilder content = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                content.append(line).append("\n");
+            }
+        }
+        return content.toString();
+    }
+
+    private static String readFileContent(File file) throws IOException {
+        StringBuilder content = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 content.append(line).append("\n");
@@ -210,12 +270,44 @@ public class EPLDataGenerator {
         System.out.println("文件已写入到output目录: " + outputPath.toAbsolutePath());
     }
 
-    public static void main(String[] args) {
+
+    private static void saveToFile( String filename,String data) {
+        try {
+            // 获取classpath的根目录路径（资源目录）
+            URL resourceUrl = UnderstatScraper.class.getClassLoader().getResource("");
+            File dataDir;
+
+            if (resourceUrl != null && resourceUrl.getProtocol().equals("file")) {
+                // 开发环境：资源在文件系统中
+                String decodedPath = URLDecoder.decode(resourceUrl.getPath(), StandardCharsets.UTF_8);
+                File resourcesDir = new File(decodedPath);
+                dataDir = new File(resourcesDir, "data");
+            } else {
+                // 生产环境（jar包）或无法获取资源目录时，使用当前工作目录下的data目录
+                dataDir = new File("data");
+            }
+
+            if (!dataDir.exists()) {
+                dataDir.mkdirs();
+            }
+
+            File outputFile = new File(dataDir, filename);
+
+            try (FileWriter file = new FileWriter(outputFile)) {
+                file.write(data);
+                System.out.println("数据已保存到: " + outputFile.getAbsolutePath());
+            }
+        } catch (IOException e) {
+            System.err.println("保存文件失败: " + e.getMessage());
+        }
+    }
+
+    public static void saveXgData(String league) {
         ObjectMapper mapper = new ObjectMapper();
 
         try {
             // 1. 从resource目录读取原始数据
-            String jsonContent = readResourceFile("epl_2025_teams.json");
+            String jsonContent = readResourceFile(league+"_2025_teams.json");
             Map<String, Map<String, Object>> teamsData = mapper.readValue(
                     jsonContent,
                     new TypeReference<Map<String, Map<String, Object>>>() {}
@@ -328,36 +420,12 @@ public class EPLDataGenerator {
             String awayJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(awayList);
 
             // 使用简单的方法写入到output目录
-            writeToOutputDir("EPL_generated.json", totalJson);
-            writeToOutputDir("EPL_home_generated.json", homeJson);
-            writeToOutputDir("EPL_away_generated.json", awayJson);
+            saveToFile(league+".json", totalJson);
+            saveToFile(league+"_home.json", homeJson);
+            saveToFile(league+"_away.json", awayJson);
 
             System.out.println("\n数据生成完成！");
             System.out.println("已生成文件：");
-            System.out.println("1. output/EPL_generated.json - 总统计数据");
-            System.out.println("2. output/EPL_home_generated.json - 主场统计数据");
-            System.out.println("3. output/EPL_away_generated.json - 客场统计数据");
-
-            // 6. 打印统计摘要
-            System.out.println("\n球队统计摘要：");
-            for (String team : totalStats.keySet()) {
-                TeamStats total = totalStats.get(team);
-                TeamStats home = homeStats.get(team);
-                TeamStats away = awayStats.get(team);
-
-                System.out.println("\n" + team + ":");
-                System.out.printf("  总: %d场 %d胜 %d平 %d负 积分:%d 进球:%d 失球:%d 净胜球:%d\n",
-                        total.matches, total.wins, total.draws, total.loses,
-                        total.points, total.goals, total.ga, total.goals - total.ga);
-                System.out.printf("  主场: %d场 %d胜 %d平 %d负 积分:%d\n",
-                        home.matches, home.wins, home.draws, home.loses, home.points);
-                System.out.printf("  客场: %d场 %d胜 %d平 %d负 积分:%d\n",
-                        away.matches, away.wins, away.draws, away.loses, away.points);
-            }
-
-            // 7. 打印生成的JSON预览
-            System.out.println("\n生成的JSON预览（总统计数据）：");
-            System.out.println(totalJson);
 
         } catch (IOException e) {
             e.printStackTrace();
