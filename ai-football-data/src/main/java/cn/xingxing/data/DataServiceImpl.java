@@ -152,6 +152,7 @@ public class DataServiceImpl implements DataService {
     public int loadSimilarMatchByMatchId(String matchId) {
         LambdaQueryWrapper<HadList> hadQuery = new LambdaQueryWrapper<>();
         hadQuery.eq(HadList::getMatchId, matchId);
+        hadQuery.eq(HadList::getGoalLine,"");
         List<HadList> hadLists = hadListMapperMapper.selectList(hadQuery);
         if (!CollectionUtils.isEmpty(hadLists)) {
             hadLists.forEach(hadList -> {
