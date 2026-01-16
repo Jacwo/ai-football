@@ -137,6 +137,7 @@ public class DataServiceImpl implements DataService {
         List<Integer> list = matchInfoMapper.selectList(queryWrapper).stream().map(SubMatchInfo::getMatchId).toList();
         LambdaQueryWrapper<HadList> hadQuery = new LambdaQueryWrapper<>();
         hadQuery.in(HadList::getMatchId, list);
+        hadQuery.eq(HadList::getGoalLine, "");
         List<HadList> hadLists = hadListMapperMapper.selectList(hadQuery);
         if (!CollectionUtils.isEmpty(hadLists)) {
             hadLists.forEach(hadList -> {
