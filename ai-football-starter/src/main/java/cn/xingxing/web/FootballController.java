@@ -83,9 +83,9 @@ public class FootballController {
     public ApiResponse<TeamStatsVo> getXgData(@PathVariable String matchId) {
         SubMatchInfo matchById = matchInfoService.findMatchById(matchId);
         TeamStats home = teamStatsService.selectByTeamName(matchById.getHomeTeamAbbName(), "home");
-        TeamStats away = teamStatsService.selectByTeamName(matchById.getHomeTeamAbbName(), "away");
-        TeamStats all = teamStatsService.selectByTeamName(matchById.getHomeTeamAbbName(), "all");
-        return ApiResponse.success(TeamStatsVo.builder().all(all).away(away).home(home).build());
+        TeamStats away = teamStatsService.selectByTeamName(matchById.getAwayTeamAbbName(), "away");
+      //  TeamStats all = teamStatsService.selectByTeamName(matchById.getHomeTeamAbbName(), "all");
+        return ApiResponse.success(TeamStatsVo.builder().all(null).away(away).home(home).build());
     }
 
 
