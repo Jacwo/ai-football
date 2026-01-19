@@ -73,7 +73,7 @@ public class FootballController {
 
     @PostMapping("/xg/data/{matchId}")
     public ApiResponse<TeamStatsVo> getXgData(@PathVariable String matchId) {
-        matchInfoService.findMatchById(matchId)
+        MatchInfoVo matchById = matchInfoService.findMatchById(matchId);
         TeamStats home = teamStatsService.selectByTeamName(matchById.getHomeTeamAbbName(), "home");
         TeamStats away = teamStatsService.selectByTeamName(matchById.getAwayTeamAbbName(), "away");
       //  TeamStats all = teamStatsService.selectByTeamName(matchById.getHomeTeamAbbName(), "all");

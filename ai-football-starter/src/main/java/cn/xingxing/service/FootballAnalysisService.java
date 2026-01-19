@@ -271,8 +271,8 @@ public class FootballAnalysisService {
 
 
     public MatchAnalysis analysisByMatchId(String matchId) {
-        matchInfoService.findMatchById(matchId)
-        return analyzeSingleMatch(byId);
+        MatchInfoVo matchById = matchInfoService.findMatchById(matchId);
+        return analyzeSingleMatch(matchById);
     }
 
     public Flux<String> analysisByMatchIdStream(String matchId) {
