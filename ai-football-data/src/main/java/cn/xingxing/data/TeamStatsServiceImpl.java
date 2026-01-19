@@ -42,7 +42,7 @@ public class TeamStatsServiceImpl implements TeamStatsService {
             AtomicInteger rank = new AtomicInteger(1);
             teamStatsList.forEach(teamStats -> {
                 TeamStats teamStatsDB = selectByTeam(teamStats.getTeam(), "all");
-                teamStats.setRank(rank.getAndIncrement());
+                teamStats.setRankNum(rank.getAndIncrement());
                 if (teamStatsDB != null) {
                     teamStats.setTeamName(teamStatsDB.getTeamName());
                     teamStats.setId(teamStatsDB.getId());

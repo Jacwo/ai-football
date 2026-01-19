@@ -35,7 +35,7 @@ public class TeamStats {
 
     private Integer points; // 积分
 
-    private Integer rank;
+    private Integer rankNum;
 
     // --- 以下为高级数据字段 ---
     @TableField("xG")

@@ -53,8 +53,8 @@ public class MatchInfoServiceImpl extends ServiceImpl<MatchInfoMapper, SubMatchI
             TeamStats homeStats = teamStatsService.selectByTeam(m.getHomeTeamAbbName(), "all");
             TeamStats awayStats = teamStatsService.selectByTeam(m.getAwayTeamAbbName(), "all");
             if(homeStats!=null && awayStats!=null){
-                m.setHomeTeamRank(homeStats.getRank());
-                m.setAwayTeamRank(awayStats.getRank());
+                m.setHomeTeamRank(homeStats.getRankNum());
+                m.setAwayTeamRank(awayStats.getRankNum());
             }
         });
         return  matchInfoVos;
@@ -70,8 +70,8 @@ public class MatchInfoServiceImpl extends ServiceImpl<MatchInfoMapper, SubMatchI
         TeamStats homeStats = teamStatsService.selectByTeam(matchInfoVo.getHomeTeamAbbName(), "all");
         TeamStats awayStats = teamStatsService.selectByTeam(matchInfoVo.getAwayTeamAbbName(), "all");
         if(homeStats!=null && awayStats!=null){
-            matchInfoVo.setHomeTeamRank(homeStats.getRank());
-            matchInfoVo.setAwayTeamRank(awayStats.getRank());
+            matchInfoVo.setHomeTeamRank(homeStats.getRankNum());
+            matchInfoVo.setAwayTeamRank(awayStats.getRankNum());
         }
         return matchInfoVo;
     }
