@@ -283,7 +283,6 @@ public class FootballAnalysisService {
 
     private Flux<String> analyzeSingleMatchStream(SubMatchInfo match) {
         String matchId = String.valueOf(match.getMatchId());
-        AiAnalysisResultVo byMatchId = aiAnalysisResultService.findByMatchId(matchId);
         // 构建分析对象
         MatchAnalysis analysis = MatchAnalysis.builder()
                 .homeTeam(match.getHomeTeamAbbName())
