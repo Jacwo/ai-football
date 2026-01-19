@@ -50,8 +50,8 @@ public class MatchInfoServiceImpl extends ServiceImpl<MatchInfoMapper, SubMatchI
         }).toList();
         List<MatchInfoVo> matchInfoVos = JSONObject.parseArray(JSONObject.toJSONString(list), MatchInfoVo.class);
         matchInfoVos.forEach(m->{
-            TeamStats homeStats = teamStatsService.selectByTeam(m.getHomeTeamAbbName(), "all");
-            TeamStats awayStats = teamStatsService.selectByTeam(m.getAwayTeamAbbName(), "all");
+            TeamStats homeStats = teamStatsService.selectByTeamName(m.getHomeTeamAbbName(), "all");
+            TeamStats awayStats = teamStatsService.selectByTeamName(m.getAwayTeamAbbName(), "all");
             if(homeStats!=null && awayStats!=null){
                 m.setHomeTeamRank(homeStats.getRankNum());
                 m.setAwayTeamRank(awayStats.getRankNum());
