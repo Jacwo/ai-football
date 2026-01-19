@@ -4,6 +4,7 @@ import cn.xingxing.data.TeamStatsService;
 import cn.xingxing.entity.*;
 import cn.xingxing.notify.NotifyService;
 import cn.xingxing.vo.AiAnalysisResultVo;
+import cn.xingxing.vo.MatchInfoVo;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import cn.xingxing.common.config.FootballApiConfig;
@@ -65,7 +66,7 @@ public class FootballAnalysisService {
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
-    public List<MatchAnalysis> analyzeMatches(List<SubMatchInfo> validMatches) {
+    public List<MatchAnalysis> analyzeMatches(List<MatchInfoVo> validMatches) {
         log.info("开始分析比赛数据...");
         try {
             List<CompletableFuture<MatchAnalysis>> futures = validMatches.stream()
@@ -96,7 +97,7 @@ public class FootballAnalysisService {
     }
 
 
-    private MatchAnalysis analyzeSingleMatch(SubMatchInfo match) {
+    private MatchAnalysis analyzeSingleMatch(MatchInfoVo match) {
         try {
             String matchId = String.valueOf(match.getMatchId());
             AiAnalysisResultVo byMatchId = aiAnalysisResultService.findByMatchId(matchId);
@@ -251,28 +252,26 @@ public class FootballAnalysisService {
     }
 
     public void analyzeAndNotify() {
-        List<SubMatchInfo> currentDateMatch = matchInfoService.findMatchList();
-        List<List<SubMatchInfo>> lists = splitIntoBatches(currentDateMatch, 3);
+        List<MatchInfoVo> matchList = matchInfoService.findMatchList();
+        List<List<MatchInfoVo>> lists = splitIntoBatches(matchList, 3);
         lists.forEach(list -> {
-            List<MatchAnalysis> analyses = analyzeMatches(list);
-            //  notifyService.sendMsg(analyses);
+            analyzeMatches(list);
         });
 
     }
 
-    private List<List<SubMatchInfo>> splitIntoBatches(List<SubMatchInfo> analyses, int batchSize) {
-        List<List<SubMatchInfo>> batches = new ArrayList<>();
+    private List<List<MatchInfoVo>> splitIntoBatches(List<MatchInfoVo> analyses, int batchSize) {
+        List<List<MatchInfoVo>> batches = new ArrayList<>();
         for (int i = 0; i < analyses.size(); i += batchSize) {
             int end = Math.min(analyses.size(), i + batchSize);
             batches.add(new ArrayList<>(analyses.subList(i, end)));
         }
-
         return batches;
     }
 
 
     public MatchAnalysis analysisByMatchId(String matchId) {
-        SubMatchInfo byId = matchInfoService.getById(matchId);
+        matchInfoService.findMatchById(matchId)
         return analyzeSingleMatch(byId);
     }
 

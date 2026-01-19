@@ -9,6 +9,7 @@ import cn.xingxing.mapper.AiAnalysisResultMapper;
 import cn.xingxing.mapper.GuideMapper;
 import cn.xingxing.service.GuideService;
 import cn.xingxing.service.MatchInfoService;
+import cn.xingxing.vo.MatchInfoVo;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,19 +36,19 @@ public class GuideServiceImpl extends ServiceImpl<GuideMapper, Guide> implements
     @Override
     public void initEngine() {
         this.remove(null);
-        List<SubMatchInfo> matchList = matchInfoService.findMatchList();
+        List<MatchInfoVo> matchList = matchInfoService.findMatchList();
         List<Guide> list = matchList.stream().map((p -> mergeToGuide(p))).toList();
         this.saveBatch(list);
     }
 
-    private Guide mergeToGuide(SubMatchInfo p) {
+    private Guide mergeToGuide(MatchInfoVo p) {
         Guide guide = new Guide();
         guide.setMatchId(String.valueOf(p.getMatchId()));
         guide.setQuestionName(formatQuestionName(p));
         return guide;
     }
 
-    private String formatQuestionName(SubMatchInfo p) {
+    private String formatQuestionName(MatchInfoVo p) {
         return String.format("分析%svs%s这场比赛",p.getHomeTeamAbbName(),p.getAwayTeamAbbName());
     }
 

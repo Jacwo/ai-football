@@ -10,16 +10,13 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @Author: yangyuanliang
@@ -29,8 +26,7 @@ import java.util.Map;
 @Service
 public class TeamStatsServiceImpl implements TeamStatsService {
     @Autowired
-    TeamStatsMapper teamStatsMapper;
-
+    private TeamStatsMapper teamStatsMapper;
 
     @Override
     public void loadTeamStats(String name) {
@@ -43,8 +39,10 @@ public class TeamStatsServiceImpl implements TeamStatsService {
 
             System.out.println("成功读取 " + teamStatsList.size() + " 支球队数据");
             List<TeamStats> newTeamStatsList = new ArrayList<>();
+            AtomicInteger rank = new AtomicInteger(1);
             teamStatsList.forEach(teamStats -> {
                 TeamStats teamStatsDB = selectByTeam(teamStats.getTeam(), "all");
+                teamStats.setRank(rank.getAndIncrement());
                 if (teamStatsDB != null) {
                     teamStats.setTeamName(teamStatsDB.getTeamName());
                     teamStats.setId(teamStatsDB.getId());
@@ -52,7 +50,6 @@ public class TeamStatsServiceImpl implements TeamStatsService {
                     newTeamStatsList.add(teamStatsDB);
                 } else {
                     teamStats.setFlag("all");
-
                     newTeamStatsList.add(teamStats);
                 }
             });

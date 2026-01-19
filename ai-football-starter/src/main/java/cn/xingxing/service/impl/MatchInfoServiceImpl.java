@@ -1,6 +1,8 @@
 package cn.xingxing.service.impl;
 
 
+import cn.xingxing.data.TeamStatsService;
+import cn.xingxing.entity.TeamStats;
 import cn.xingxing.service.MatchInfoService;
 import cn.xingxing.vo.MatchInfoVo;
 import com.alibaba.fastjson.JSONObject;
@@ -10,8 +12,10 @@ import cn.xingxing.entity.SubMatchInfo;
 import cn.xingxing.mapper.MatchInfoMapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -28,26 +32,48 @@ public class MatchInfoServiceImpl extends ServiceImpl<MatchInfoMapper, SubMatchI
     @Autowired
     private MatchInfoMapper matchInfoMapper;
 
+    @Autowired
+    private TeamStatsService teamStatsService;
+
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     @Override
-    public List<SubMatchInfo> findMatchList() {
+    public List<MatchInfoVo> findMatchList() {
         LambdaQueryWrapper<SubMatchInfo> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(SubMatchInfo::getMatchStatus, "2")
                 .or(wq -> wq.eq(SubMatchInfo::getMatchStatus, "3")
                         .eq(SubMatchInfo::getMatchStatusName, "暂停销售"));
         List<SubMatchInfo> subMatchInfos = matchInfoMapper.selectList(queryWrapper);
-        return subMatchInfos.stream().filter(f -> {
+        List<SubMatchInfo> list = subMatchInfos.stream().filter(f -> {
             LocalDateTime localDateTime = parseMatchTime(f.getMatchDate(), f.getMatchTime());
             return localDateTime.isAfter(LocalDateTime.now());
         }).toList();
+        List<MatchInfoVo> matchInfoVos = JSONObject.parseArray(JSONObject.toJSONString(list), MatchInfoVo.class);
+        matchInfoVos.forEach(m->{
+            TeamStats homeStats = teamStatsService.selectByTeam(m.getHomeTeamAbbName(), "all");
+            TeamStats awayStats = teamStatsService.selectByTeam(m.getAwayTeamAbbName(), "all");
+            if(homeStats!=null && awayStats!=null){
+                m.setHomeTeamRank(homeStats.getRank());
+                m.setAwayTeamRank(awayStats.getRank());
+            }
+        });
+        return  matchInfoVos;
     }
 
     @Override
-    public SubMatchInfo findMatchById(String matchId) {
+    public MatchInfoVo findMatchById(String matchId) {
+        MatchInfoVo matchInfoVo = new MatchInfoVo();
         LambdaQueryWrapper<SubMatchInfo> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(SubMatchInfo::getMatchId, matchId);
-        return matchInfoMapper.selectOne(queryWrapper);
+        SubMatchInfo subMatchInfo = matchInfoMapper.selectOne(queryWrapper);
+        BeanUtils.copyProperties(subMatchInfo, matchInfoVo);
+        TeamStats homeStats = teamStatsService.selectByTeam(matchInfoVo.getHomeTeamAbbName(), "all");
+        TeamStats awayStats = teamStatsService.selectByTeam(matchInfoVo.getAwayTeamAbbName(), "all");
+        if(homeStats!=null && awayStats!=null){
+            matchInfoVo.setHomeTeamRank(homeStats.getRank());
+            matchInfoVo.setAwayTeamRank(awayStats.getRank());
+        }
+        return matchInfoVo;
     }
 
 

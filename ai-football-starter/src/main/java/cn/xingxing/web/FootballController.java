@@ -55,20 +55,12 @@ public class FootballController {
 
     @GetMapping("/list")
     public ApiResponse<List<MatchInfoVo>> listMatchInfo() {
-        List<MatchInfoVo> matchInfoVos = new ArrayList<>();
-        List<SubMatchInfo> currentDateMatch = matchInfoService.findMatchList();
-        if (!CollectionUtils.isEmpty(currentDateMatch)) {
-            matchInfoVos = JSONObject.parseArray(JSONObject.toJSONString(currentDateMatch), MatchInfoVo.class);
-        }
-        return ApiResponse.success(matchInfoVos);
+        return ApiResponse.success(matchInfoService.findMatchList());
     }
 
     @GetMapping("/{matchId}")
     public ApiResponse<MatchInfoVo> findMatchById(@PathVariable String matchId) {
-        MatchInfoVo matchInfoVo = new MatchInfoVo();
-        SubMatchInfo matchById = matchInfoService.findMatchById(matchId);
-        BeanUtils.copyProperties(matchById, matchInfoVo);
-        return ApiResponse.success(matchInfoVo);
+        return ApiResponse.success(matchInfoService.findMatchById(matchId));
     }
 
     @PostMapping("/analysis/{matchId}")
@@ -81,7 +73,7 @@ public class FootballController {
 
     @PostMapping("/xg/data/{matchId}")
     public ApiResponse<TeamStatsVo> getXgData(@PathVariable String matchId) {
-        SubMatchInfo matchById = matchInfoService.findMatchById(matchId);
+        matchInfoService.findMatchById(matchId)
         TeamStats home = teamStatsService.selectByTeamName(matchById.getHomeTeamAbbName(), "home");
         TeamStats away = teamStatsService.selectByTeamName(matchById.getAwayTeamAbbName(), "away");
       //  TeamStats all = teamStatsService.selectByTeamName(matchById.getHomeTeamAbbName(), "all");

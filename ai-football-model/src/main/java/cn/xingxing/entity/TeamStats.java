@@ -35,6 +35,8 @@ public class TeamStats {
 
     private Integer points; // 积分
 
+    private Integer rank;
+
     // --- 以下为高级数据字段 ---
     @TableField("xG")
     private Double xG; // 预期进球

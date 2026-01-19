@@ -1,7 +1,6 @@
 package cn.xingxing.vo;
 
 
-import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 
 /**
@@ -11,7 +10,6 @@ import lombok.Data;
  */
 @Data
 public class MatchInfoVo {
-    @TableId
     private int matchId;
     private String awayTeamAbbName;
     private String awayTeamAllName;
@@ -43,4 +41,6 @@ public class MatchInfoVo {
     private String hdraw;
     private String goalLine;
     private Boolean isSingleMatch =false;
+    private Integer homeTeamRank;
+    private Integer awayTeamRank;
 }
