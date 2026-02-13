@@ -258,15 +258,15 @@ public class BacktestService {
         knowledge.setAwayTeam(result.getAwayTeam());
         knowledge.setMatchTime(result.getMatchTime());
 
-        // aiResult 是预测比分（如 "2:1"），转换为胜负结果存储
-        String predictedScore = result.getAiResult();
-        knowledge.setAiScore(predictedScore);
-        knowledge.setAiPrediction(scoreToOutcome(predictedScore)); // 从比分推断胜负
+        // aiResult 是预测胜负（如 "主胜"）
+        knowledge.setAiPrediction(result.getAiResult());
+        // aiScore 是预测比分（如 "2:1"）
+        knowledge.setAiScore(result.getAiScore());
 
-        // matchResult 是实际胜负（如 "主胜"）
-        knowledge.setActualResult(result.getMatchResult());
-        // aiScore 可能存储实际比分
-        knowledge.setActualScore(result.getAiScore());
+        // matchResult 是实际比分（如 "0:1"），转换为胜负存储
+        String actualScore = result.getMatchResult();
+        knowledge.setActualScore(actualScore);
+        knowledge.setActualResult(scoreToOutcome(actualScore)); // 从比分推断胜负
 
         // 评估预测是否正确
         knowledge.setPredictionCorrect(isResultCorrect(result));
@@ -300,10 +300,10 @@ public class BacktestService {
             return false;
         }
 
-        // aiResult 是比分（如 "0:1", "2:1"），需要转换为胜负
-        String predictedOutcome = scoreToOutcome(result.getAiResult().trim());
-        // matchResult 是胜负（如 "主胜", "平局", "客胜"）
-        String actualOutcome = normalizeResult(result.getMatchResult().trim());
+        // aiResult 是胜负（如 "主胜", "平局", "客胜"）
+        String predictedOutcome = normalizeResult(result.getAiResult().trim());
+        // matchResult 是比分（如 "0:1", "2:1"），需要转换为胜负
+        String actualOutcome = scoreToOutcome(result.getMatchResult().trim());
 
         return predictedOutcome.equals(actualOutcome);
     }
@@ -357,9 +357,9 @@ public class BacktestService {
     }
 
     private boolean isScoreCorrect(AiAnalysisResult result) {
-        // aiResult 是预测比分，aiScore 也可能存比分
-        String predictedScore = result.getAiResult();
-        String actualScore = result.getAiScore(); // 实际比分可能存在 aiScore 字段
+        // aiScore 是预测比分，matchResult 是实际比分
+        String predictedScore = result.getAiScore();
+        String actualScore = result.getMatchResult();
 
         if (predictedScore == null || actualScore == null) {
             return false;
@@ -547,8 +547,9 @@ public class BacktestService {
     }
 
     private String classifyError(AiAnalysisResult result) {
+        // aiResult 是预测胜负，matchResult 是实际比分需转换
         String prediction = normalizeResult(result.getAiResult());
-        String actual = normalizeResult(result.getMatchResult());
+        String actual = scoreToOutcome(result.getMatchResult());
 
         return String.format("预测%s->实际%s", prediction, actual);
     }
