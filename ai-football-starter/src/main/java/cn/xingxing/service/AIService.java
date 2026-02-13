@@ -2,6 +2,9 @@ package cn.xingxing.service;
 
 import cn.xingxing.ai.StreamingAssistant;
 import cn.xingxing.entity.HadList;
+import cn.xingxing.rag.service.ConfidenceEvaluator;
+import cn.xingxing.rag.service.EnhancedAIService;
+import cn.xingxing.rag.service.KnowledgeInitService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import cn.xingxing.ai.Assistant;
 import cn.xingxing.entity.AiAnalysisResult;
@@ -31,12 +34,93 @@ public class AIService {
     @Autowired
     private AiAnalysisResultMapper aiAnalysisResultMapper;
 
+    @Autowired
+    private EnhancedAIService enhancedAIService;
+
+    @Autowired
+    private ConfidenceEvaluator confidenceEvaluator;
+
+    @Autowired
+    private KnowledgeInitService knowledgeInitService;
+
     Pattern win = Pattern.compile("【([^】]+)】");
     Pattern score = Pattern.compile("\\{([^}]+)\\}");
     public static List<String> league = List.of("意甲", "英超", "西甲", "德甲", "法甲");
 
 
     public String analyzeMatch(MatchAnalysis analysis) {
+        // 使用增强的RAG提示词
+        String prompt = enhancedAIService.buildEnhancedPrompt(analysis);
+        log.info("使用RAG增强提示词进行分析");
+
+        String chat = assistant.chat(prompt);
+
+        AiAnalysisResult aiAnalysisResult = new AiAnalysisResult();
+        aiAnalysisResult.setMatchId(analysis.getMatchId());
+        aiAnalysisResult.setAwayTeam(analysis.getAwayTeam());
+        aiAnalysisResult.setHomeTeam(analysis.getHomeTeam());
+        aiAnalysisResult.setMatchTime(analysis.getMatchTime());
+
+        if (!CollectionUtils.isEmpty(analysis.getHadLists())) {
+            aiAnalysisResult.setDraw(String.valueOf(analysis.getHadLists().getFirst().getD()));
+            aiAnalysisResult.setAwayWin(String.valueOf(analysis.getHadLists().getFirst().getA()));
+            aiAnalysisResult.setHomeWin(String.valueOf(analysis.getHadLists().getFirst().getH()));
+        }
+
+        aiAnalysisResult.setAiAnalysis(chat);
+
+        // 提取AI预测结果
+        String aiResult = null;
+        String aiScore = null;
+
+        Matcher matcher = score.matcher(chat);
+        if (matcher.find()) {
+            aiScore = matcher.group(1).replace("{", "").replace("}", "");
+            aiAnalysisResult.setAiScore(aiScore);
+            log.info("AI预测比分: {}", aiScore);
+        }
+
+        Matcher matcher2 = win.matcher(chat);
+        if (matcher2.find()) {
+            aiResult = matcher2.group(1).replace("【", "").replace("】", "");
+            aiAnalysisResult.setAiResult(aiResult);
+            log.info("AI预测胜负: {}", aiResult);
+        }
+
+        // 评估预测置信度
+        if (aiResult != null) {
+            ConfidenceEvaluator.ConfidenceResult confidenceResult =
+                confidenceEvaluator.evaluate(analysis, aiResult);
+
+            // 将置信度信息添加到分析结果
+            String confidenceInfo = String.format(
+                "\n\n---\n**预测置信度评估**\n- 总体置信度: %d分 (%s)\n- 数据完整度: %d/20\n- 赔率一致性: %d/25\n- 历史验证: %d/25\n- xG支撑: %d/15\n- 相似案例: %d/15\n\n**建议**: %s",
+                confidenceResult.getTotalConfidence(),
+                confidenceResult.getConfidenceLevel(),
+                confidenceResult.getDataCompletenessScore(),
+                confidenceResult.getOddsConsistencyScore(),
+                confidenceResult.getHistoricalScore(),
+                confidenceResult.getXgSupportScore(),
+                confidenceResult.getSimilarCasesScore(),
+                confidenceResult.getRecommendation()
+            );
+            chat = chat + confidenceInfo;
+            aiAnalysisResult.setAiAnalysis(chat);
+
+            log.info("置信度评估: {}分 - {}", confidenceResult.getTotalConfidence(),
+                confidenceResult.getConfidenceLevel());
+        }
+
+        aiAnalysisResultMapper.insert(aiAnalysisResult);
+        log.info("比赛分析完成: {} vs {}", analysis.getHomeTeam(), analysis.getAwayTeam());
+
+        return chat;
+    }
+
+    /**
+     * 原始分析方法（不使用RAG增强）
+     */
+    public String analyzeMatchOriginal(MatchAnalysis analysis) {
         String prompt;
         if (league.contains(analysis.getLeague())) {
             prompt = buildAnalysisPromptWithXg(analysis);
@@ -56,17 +140,13 @@ public class AIService {
             aiAnalysisResult.setHomeWin(String.valueOf(analysis.getHadLists().getFirst().getH()));
         }
         aiAnalysisResult.setAiAnalysis(chat);
-        System.out.println(chat);
         Matcher matcher = score.matcher(chat);
         if (matcher.find()) {
-            System.out.println("ai比分---" + matcher.group(1));
             aiAnalysisResult.setAiScore(matcher.group(1).replace("{", "").replace("}", ""));
         }
         Matcher matcher2 = win.matcher(chat);
         if (matcher2.find()) {
-            System.out.println("ai胜负---" + matcher2.group(1));
             aiAnalysisResult.setAiResult(matcher2.group(1).replace("【", "").replace("】", ""));
-
         }
         aiAnalysisResultMapper.insert(aiAnalysisResult);
         log.info("比赛分析结果： {}", chat);
@@ -223,14 +303,20 @@ public class AIService {
         queryWrapper.ne(AiAnalysisResult::getMatchResult, "");
         queryWrapper.isNull(AiAnalysisResult::getAfterMatchAnalysis);
         List<AiAnalysisResult> aiAnalysisResults = aiAnalysisResultMapper.selectList(queryWrapper);
+
         aiAnalysisResults.forEach(result -> {
             String prompt = buildAfterAnalysisPrompt(result);
             String chat = assistant.chatV2(prompt);
             log.info("afterMatchAnalysis {}", chat);
             result.setAfterMatchAnalysis(chat);
             aiAnalysisResultMapper.updateById(result);
+
+            // 将新的分析结果添加到知识库
+            knowledgeInitService.addNewKnowledge(result);
         });
-        return "";
+
+        log.info("赛后复盘完成，已更新 {} 条知识库记录", aiAnalysisResults.size());
+        return String.format("复盘完成，更新 %d 条记录", aiAnalysisResults.size());
     }
 
 

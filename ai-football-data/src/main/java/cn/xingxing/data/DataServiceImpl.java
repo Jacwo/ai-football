@@ -50,6 +50,7 @@ public class DataServiceImpl implements DataService {
     @Autowired
     private TeamStatsService teamStatsService;
 
+
     @Override
     public int syncMatchInfoData() {
         String matchListJson = HttpClientUtil.doGet(
@@ -192,7 +193,7 @@ public class DataServiceImpl implements DataService {
 
     @Override
     public int afterMatchAnalysis() {
-     //   aiService.afterMatchAnalysis();
+
         return 0;
     }
 

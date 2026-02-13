@@ -3,6 +3,7 @@ package cn.xingxing.web;
 
 import cn.xingxing.data.DataService;
 import cn.xingxing.dto.ApiResponse;
+import cn.xingxing.service.AIService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +20,9 @@ import java.util.concurrent.Executors;
 public class SyncController {
     @Autowired
     private DataService dataService;
+
+    @Autowired
+    private AIService aiService;
     @GetMapping("/sync/match")
     public ApiResponse<Boolean> syncMatchInfo(){
         dataService.syncMatchInfoData();
@@ -58,7 +62,7 @@ public class SyncController {
     @GetMapping("/after/match/analysis")
     public ApiResponse<Boolean> afterMatchAnalysis(){
         ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
-        executorService.execute(() -> dataService.afterMatchAnalysis());
+        executorService.execute(() -> aiService.afterMatchAnalysis());
         return ApiResponse.success(true);
     }
 }

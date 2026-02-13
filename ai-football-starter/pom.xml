@@ -22,7 +22,11 @@
             <groupId>cn.xingxing</groupId>
             <artifactId>ai-football-data</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-
+        </dependency>
+        <dependency>
+            <groupId>cn.xingxing</groupId>
+            <artifactId>ai-football-rag</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
         </dependency>
     </dependencies>
     <properties>
