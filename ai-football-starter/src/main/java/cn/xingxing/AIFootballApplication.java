@@ -8,7 +8,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableScheduling
-@MapperScan("cn.xingxing.mapper")
+@MapperScan({"cn.xingxing.mapper", "cn.xingxing.rag.mapper"})
 public class AIFootballApplication {
 
 	public static void main(String[] args) {

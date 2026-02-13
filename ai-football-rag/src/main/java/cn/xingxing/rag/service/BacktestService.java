@@ -3,6 +3,9 @@ package cn.xingxing.rag.service;
 import cn.xingxing.entity.AiAnalysisResult;
 import cn.xingxing.rag.entity.MatchKnowledge;
 import cn.xingxing.rag.entity.PredictionStats;
+import cn.xingxing.rag.mapper.MatchKnowledgeMapper;
+import cn.xingxing.rag.mapper.PredictionStatsMapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,22 +27,102 @@ import java.util.stream.Collectors;
 public class BacktestService {
 
     private final KnowledgeVectorStore vectorStore;
+    private final MatchKnowledgeMapper matchKnowledgeMapper;
+    private final PredictionStatsMapper predictionStatsMapper;
 
     /**
      * 从历史分析结果构建知识库
-     * 将AiAnalysisResult转换为MatchKnowledge并加入向量存储
+     * 将AiAnalysisResult转换为MatchKnowledge并加入向量存储和数据库
      */
     public int buildKnowledgeFromHistory(List<AiAnalysisResult> results) {
         int count = 0;
         for (AiAnalysisResult result : results) {
             if (result.getMatchResult() != null && !result.getMatchResult().isEmpty()) {
                 MatchKnowledge knowledge = convertToKnowledge(result);
+
+                // 检查是否已存在
+                LambdaQueryWrapper<MatchKnowledge> queryWrapper = new LambdaQueryWrapper<>();
+                queryWrapper.eq(MatchKnowledge::getMatchId, knowledge.getMatchId());
+                MatchKnowledge existing = matchKnowledgeMapper.selectOne(queryWrapper);
+
+                if (existing == null) {
+                    // 保存到数据库
+                    matchKnowledgeMapper.insert(knowledge);
+                } else {
+                    // 更新已存在的记录
+                    knowledge.setId(existing.getId());
+                    knowledge.setUpdateTime(LocalDateTime.now());
+                    matchKnowledgeMapper.updateById(knowledge);
+                }
+
+                // 添加到向量存储
                 vectorStore.addKnowledge(knowledge);
                 count++;
             }
         }
-        log.info("从历史分析结果构建了 {} 条知识", count);
+        log.info("从历史分析结果构建了 {} 条知识（已同步到数据库）", count);
         return count;
+    }
+
+    /**
+     * 从数据库加载知识到向量存储
+     */
+    public int loadKnowledgeFromDatabase() {
+        List<MatchKnowledge> knowledgeList = matchKnowledgeMapper.selectList(null);
+        if (knowledgeList.isEmpty()) {
+            log.info("数据库中暂无知识记录");
+            return 0;
+        }
+
+        vectorStore.clear();
+        vectorStore.addKnowledgeBatch(knowledgeList);
+        log.info("从数据库加载了 {} 条知识到向量存储", knowledgeList.size());
+        return knowledgeList.size();
+    }
+
+    /**
+     * 保存单条知识到数据库
+     */
+    public void saveKnowledge(MatchKnowledge knowledge) {
+        LambdaQueryWrapper<MatchKnowledge> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(MatchKnowledge::getMatchId, knowledge.getMatchId());
+        MatchKnowledge existing = matchKnowledgeMapper.selectOne(queryWrapper);
+
+        if (existing == null) {
+            matchKnowledgeMapper.insert(knowledge);
+        } else {
+            knowledge.setId(existing.getId());
+            knowledge.setUpdateTime(LocalDateTime.now());
+            matchKnowledgeMapper.updateById(knowledge);
+        }
+
+        vectorStore.addKnowledge(knowledge);
+        log.debug("知识已保存: {} vs {}", knowledge.getHomeTeam(), knowledge.getAwayTeam());
+    }
+
+    /**
+     * 保存每日统计到数据库
+     */
+    public void saveDailyStats(List<PredictionStats> statsList) {
+        for (PredictionStats stats : statsList) {
+            LambdaQueryWrapper<PredictionStats> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(PredictionStats::getStatsDate, stats.getStatsDate());
+            if (stats.getLeague() != null) {
+                queryWrapper.eq(PredictionStats::getLeague, stats.getLeague());
+            } else {
+                queryWrapper.isNull(PredictionStats::getLeague);
+            }
+
+            PredictionStats existing = predictionStatsMapper.selectOne(queryWrapper);
+            if (existing == null) {
+                predictionStatsMapper.insert(stats);
+            } else {
+                stats.setId(existing.getId());
+                stats.setUpdateTime(LocalDateTime.now());
+                predictionStatsMapper.updateById(stats);
+            }
+        }
+        log.info("已保存 {} 条每日统计数据", statsList.size());
     }
 
     /**
@@ -174,9 +257,16 @@ public class BacktestService {
         knowledge.setHomeTeam(result.getHomeTeam());
         knowledge.setAwayTeam(result.getAwayTeam());
         knowledge.setMatchTime(result.getMatchTime());
-        knowledge.setAiPrediction(result.getAiResult());
-        knowledge.setAiScore(result.getAiScore());
+
+        // aiResult 是预测比分（如 "2:1"），转换为胜负结果存储
+        String predictedScore = result.getAiResult();
+        knowledge.setAiScore(predictedScore);
+        knowledge.setAiPrediction(scoreToOutcome(predictedScore)); // 从比分推断胜负
+
+        // matchResult 是实际胜负（如 "主胜"）
         knowledge.setActualResult(result.getMatchResult());
+        // aiScore 可能存储实际比分
+        knowledge.setActualScore(result.getAiScore());
 
         // 评估预测是否正确
         knowledge.setPredictionCorrect(isResultCorrect(result));
@@ -210,11 +300,46 @@ public class BacktestService {
             return false;
         }
 
-        String prediction = result.getAiResult().trim();
-        String actual = result.getMatchResult().trim();
+        // aiResult 是比分（如 "0:1", "2:1"），需要转换为胜负
+        String predictedOutcome = scoreToOutcome(result.getAiResult().trim());
+        // matchResult 是胜负（如 "主胜", "平局", "客胜"）
+        String actualOutcome = normalizeResult(result.getMatchResult().trim());
 
-        // 标准化比较
-        return normalizeResult(prediction).equals(normalizeResult(actual));
+        return predictedOutcome.equals(actualOutcome);
+    }
+
+    /**
+     * 将比分转换为胜负结果
+     * @param score 比分，如 "2:1", "0:0", "1:3"
+     * @return 胜负结果：主胜/平局/客胜
+     */
+    private String scoreToOutcome(String score) {
+        if (score == null || score.isEmpty()) {
+            return "";
+        }
+
+        // 尝试解析比分
+        String[] parts = score.split("[:：-]");
+        if (parts.length != 2) {
+            // 如果不是比分格式，可能已经是胜负结果，直接标准化
+            return normalizeResult(score);
+        }
+
+        try {
+            int homeGoals = Integer.parseInt(parts[0].trim());
+            int awayGoals = Integer.parseInt(parts[1].trim());
+
+            if (homeGoals > awayGoals) {
+                return "主胜";
+            } else if (homeGoals < awayGoals) {
+                return "客胜";
+            } else {
+                return "平局";
+            }
+        } catch (NumberFormatException e) {
+            // 解析失败，尝试标准化
+            return normalizeResult(score);
+        }
     }
 
     private String normalizeResult(String result) {
@@ -232,18 +357,29 @@ public class BacktestService {
     }
 
     private boolean isScoreCorrect(AiAnalysisResult result) {
-        if (result.getAiScore() == null || result.getMatchResult() == null) {
+        // aiResult 是预测比分，aiScore 也可能存比分
+        String predictedScore = result.getAiResult();
+        String actualScore = result.getAiScore(); // 实际比分可能存在 aiScore 字段
+
+        if (predictedScore == null || actualScore == null) {
             return false;
         }
-        // 从实际结果中提取比分
-        String actualScore = extractScoreFromResult(result.getMatchResult());
-        return result.getAiScore().replace(" ", "").equals(actualScore.replace(" ", ""));
+
+        // 标准化比分格式后比较
+        return normalizeScore(predictedScore).equals(normalizeScore(actualScore));
     }
 
-    private String extractScoreFromResult(String matchResult) {
-        // 尝试从结果中提取比分 (如 "2:1" 或 "2-1")
-        if (matchResult == null) return "";
-        return matchResult.replaceAll("[^0-9:-]", "");
+    /**
+     * 标准化比分格式
+     * 将 "2:1", "2-1", "2：1" 等统一为 "2:1" 格式
+     */
+    private String normalizeScore(String score) {
+        if (score == null) return "";
+        // 移除空格，统一分隔符为冒号
+        return score.trim()
+            .replace(" ", "")
+            .replace("-", ":")
+            .replace("：", ":");
     }
 
     private BigDecimal calculatePercentage(long correct, int total) {

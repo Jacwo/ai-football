@@ -33,7 +33,14 @@ public class KnowledgeInitService {
         log.info("开始初始化AI预测知识库...");
 
         try {
-            // 查询所有有结果的历史分析记录
+            // 首先尝试从数据库加载已有的知识
+            int dbCount = backtestService.loadKnowledgeFromDatabase();
+
+            if (dbCount > 0) {
+                log.info("从数据库加载了 {} 条知识", dbCount);
+            }
+
+            // 查询所有有结果的历史分析记录，同步新数据
             LambdaQueryWrapper<AiAnalysisResult> queryWrapper = new LambdaQueryWrapper<>();
             queryWrapper.isNotNull(AiAnalysisResult::getMatchResult);
             queryWrapper.ne(AiAnalysisResult::getMatchResult, "");
@@ -42,14 +49,14 @@ public class KnowledgeInitService {
             List<AiAnalysisResult> historicalResults = aiAnalysisResultMapper.selectList(queryWrapper);
 
             if (historicalResults.isEmpty()) {
-                log.info("暂无历史分析数据，知识库为空");
+                log.info("暂无历史分析数据");
                 return;
             }
 
-            // 构建知识库
+            // 构建/更新知识库（会同步到数据库）
             int count = backtestService.buildKnowledgeFromHistory(historicalResults);
 
-            log.info("知识库初始化完成，共加载 {} 条历史分析经验", count);
+            log.info("知识库初始化完成，共 {} 条历史分析经验", count);
 
             // 生成回测报告
             var report = backtestService.generateBacktestReport(historicalResults);
@@ -57,6 +64,10 @@ public class KnowledgeInitService {
                 report.getTotalMatches(),
                 report.getResultAccuracy(),
                 report.getScoreAccuracy());
+
+            // 保存每日统计到数据库
+            var dailyStats = backtestService.generateDailyStats(historicalResults);
+            backtestService.saveDailyStats(dailyStats);
 
         } catch (Exception e) {
             log.error("知识库初始化失败", e);
