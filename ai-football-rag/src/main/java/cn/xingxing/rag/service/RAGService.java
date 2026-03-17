@@ -80,7 +80,7 @@ public class RAGService {
     public String buildEnhancedPrompt(String originalPrompt, String league, String homeTeam,
                                        String awayTeam, String oddsInfo, String scenario) {
         String experience = retrieveRelevantExperience(league, homeTeam, awayTeam, oddsInfo, scenario);
-        String successfulCases = retrieveSuccessfulPredictions(league, 3);
+        String successfulCases = retrieveSuccessfulPredictions(league, 5);
 
         if (experience.isEmpty() && successfulCases.isEmpty()) {
             return originalPrompt;

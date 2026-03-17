@@ -40,7 +40,8 @@ public class EnhancedAIService {
 
         // RAG增强：检索相似历史案例
         String scenario = inferScenario(analysis);
-        String enhancedPrompt = ragService.buildEnhancedPrompt(
+
+        return ragService.buildEnhancedPrompt(
             basePrompt,
             analysis.getLeague(),
             analysis.getHomeTeam(),
@@ -48,8 +49,6 @@ public class EnhancedAIService {
             formatOddsInfo(analysis),
             scenario
         );
-
-        return enhancedPrompt;
     }
 
     /**
@@ -96,7 +95,7 @@ public class EnhancedAIService {
 
             ## 数据分析依据
 
-            ### 1. 同赔率历史比赛结果（重要参考）
+            ### 1. 同赔率历史比赛结果
             %s
 
             ### 2. 近期交锋记录
@@ -149,7 +148,6 @@ public class EnhancedAIService {
 
             ## 决策红线
             - ❌ 禁止：仅因赔率低就选择该结果
-            - ❌ 禁止：忽视同赔率历史数据
             - ✅ 必须：给出选择该结果的数据支撑
             - ✅ 必须：说明主要风险点
             """,
