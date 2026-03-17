@@ -71,6 +71,9 @@ public class EnhancedAIService {
      * 构建基础分析提示词（优化版）
      */
     private String buildBasePrompt(MatchAnalysis analysis) {
+        // 计算赔率深度分析
+        String oddsDeepAnalysis = buildOddsDeepAnalysis(analysis.getHadLists(), analysis.getHhadLists());
+
         return String.format("""
             # 足球比赛专业分析任务
 
@@ -89,9 +92,11 @@ public class EnhancedAIService {
             - 让球: %s
             - 主胜: %s | 平局: %s | 客胜: %s
 
+            %s
+
             ## 数据分析依据
 
-            ### 1. 同赔率历史比赛结果
+            ### 1. 同赔率历史比赛结果（重要参考）
             %s
 
             ### 2. 近期交锋记录
@@ -112,39 +117,41 @@ public class EnhancedAIService {
             ### 7. 最新情报
             %s
 
-            ## 分析要求
+            ## 分析框架（必须严格执行）
 
-            请按照以下框架进行专业分析：
+            ### 第一步：概率计算
+            根据上面的隐含概率数据，评估市场对各结果的预期。
 
-            ### 1. 赔率深度解读 (权重25%%)
-            - 分析赔率反映的市场预期
-            - 识别赔率异常波动
-            - 评估冷门可能性
+            ### 第二步：数据验证
+            用同赔率历史结果验证市场预期是否合理：
+            - 统计同赔率比赛中主胜/平局/客胜的实际比例
+            - 对比隐含概率与历史实际概率的偏差
 
-            ### 2. 基本面分析 (权重25%%)
-            - 历史交锋心理优势
-            - 战术风格匹配度
-            - 主客场因素
+            ### 第三步：调整因素
+            根据以下因素调整概率：
+            - 近期状态（近5场胜率、进球数）
+            - 交锋记录（主客场优势）
+            - 情报影响（伤停、轮换）
 
-            ### 3. 状态与趋势分析 (权重25%%)
-            - 近期表现趋势
-            - 进攻防守效率对比
-            - 关键球员影响
+            ### 第四步：价值判断
+            - 如果调整后概率 > 隐含概率 + 5%%，该结果有价值
+            - 关注凯利值 > 0 的选项
 
-            ### 4. 综合预测 (权重25%%)
-            - 进球数范围预测
-            - 比分预测逻辑
+            ### 第五步：最终决策
+            选择期望值最高的结果，而非简单的低赔率
 
             ## 输出格式要求
 
             1. **比分预测**: 使用 `{比分}` 格式，如 `{2:1}`
             2. **胜负预测**: 使用 `【结果】` 格式，如 `【主胜】`
             3. 预测结果必须是：主胜、平局、客胜 三选一
+            4. **置信度**: 高/中/低
 
-            ## 重要提示
-            - 不要简单跟随低赔率，需要独立分析
-            - 重点考虑冷门发生的可能场景
-            - 给出预测的核心依据
+            ## 决策红线
+            - ❌ 禁止：仅因赔率低就选择该结果
+            - ❌ 禁止：忽视同赔率历史数据
+            - ✅ 必须：给出选择该结果的数据支撑
+            - ✅ 必须：说明主要风险点
             """,
             analysis.getHomeTeam(), analysis.getAwayTeam(),
             analysis.getLeague(), analysis.getMatchTime(),
@@ -155,6 +162,7 @@ public class EnhancedAIService {
             getH(analysis.getHhadLists()),
             getD(analysis.getHhadLists()),
             getA(analysis.getHhadLists()),
+            oddsDeepAnalysis,
             formatSimilarMatches(JSONObject.toJSONString(analysis.getSimilarMatches())),
             formatRecentMatches(JSONObject.toJSONString(analysis.getRecentMatches())),
             analysis.getMatchHistoryData() != null ? analysis.getMatchHistoryData().getHome() : "暂无数据",
@@ -163,6 +171,143 @@ public class EnhancedAIService {
             formatOddsHistory(analysis.getHadLists()),
             analysis.getInformation() != null ? analysis.getInformation() : "暂无情报"
         );
+    }
+
+    /**
+     * 构建赔率深度分析
+     */
+    private String buildOddsDeepAnalysis(List<HadList> hadLists, List<HadList> hhadLists) {
+        if (CollectionUtils.isEmpty(hadLists)) {
+            return "";
+        }
+
+        try {
+            HadList latest = hadLists.getFirst();
+            double h = Double.parseDouble(latest.getH());
+            double d = Double.parseDouble(latest.getD());
+            double a = Double.parseDouble(latest.getA());
+
+            // 计算隐含概率(去除抽水)
+            double totalProb = 1/h + 1/d + 1/a;
+            double margin = (totalProb - 1) * 100;
+
+            double homeProb = (1/h) / totalProb * 100;
+            double drawProb = (1/d) / totalProb * 100;
+            double awayProb = (1/a) / totalProb * 100;
+
+            // 计算凯利值
+            double homeKelly = (h * homeProb/100 - 1) / (h - 1);
+            double drawKelly = (d * drawProb/100 - 1) / (d - 1);
+            double awayKelly = (a * awayProb/100 - 1) / (a - 1);
+
+            // 分析赔率特征
+            String pattern = analyzeOddsPattern(h, d, a);
+
+            // 分析赔率变化
+            String trend = "";
+            if (hadLists.size() >= 2) {
+                HadList first = hadLists.getLast();
+                double hChange = h - Double.parseDouble(first.getH());
+                double dChange = d - Double.parseDouble(first.getD());
+                double aChange = a - Double.parseDouble(first.getA());
+
+                StringBuilder trendBuilder = new StringBuilder();
+                if (Math.abs(hChange) > 0.05) {
+                    trendBuilder.append(hChange > 0 ? "主胜↑(降热) " : "主胜↓(升热) ");
+                }
+                if (Math.abs(dChange) > 0.05) {
+                    trendBuilder.append(dChange > 0 ? "平局↑ " : "平局↓(关注) ");
+                }
+                if (Math.abs(aChange) > 0.05) {
+                    trendBuilder.append(aChange > 0 ? "客胜↑(降热) " : "客胜↓(升热) ");
+                }
+                trend = trendBuilder.toString().isEmpty() ? "赔率稳定" : trendBuilder.toString();
+            }
+
+            return String.format("""
+
+                ### 赔率深度分析（AI必读）
+
+                #### 隐含概率（去除%.1f%%抽水）
+                | 结果 | 隐含概率 | 凯利值 | 价值判断 |
+                |------|----------|--------|----------|
+                | 主胜 | %.1f%% | %.3f | %s |
+                | 平局 | %.1f%% | %.3f | %s |
+                | 客胜 | %.1f%% | %.3f | %s |
+
+                #### 赔率特征
+                %s
+
+                #### 赔率变动
+                %s
+
+                #### 关键信号
+                %s
+                """,
+                margin,
+                homeProb, homeKelly, homeKelly > 0.05 ? "⭐有价值" : "一般",
+                drawProb, drawKelly, drawKelly > 0.05 ? "⭐有价值" : "一般",
+                awayProb, awayKelly, awayKelly > 0.05 ? "⭐有价值" : "一般",
+                pattern,
+                trend,
+                generateKeySignals(h, d, a, homeProb, drawProb, awayProb)
+            );
+
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    private String analyzeOddsPattern(double h, double d, double a) {
+        StringBuilder pattern = new StringBuilder();
+
+        if (h < 1.5) {
+            pattern.append("【极强主场】主队绝对优势，但冷门价值高；");
+        } else if (h < 1.8) {
+            pattern.append("【主队优势】主队明显优势盘；");
+        } else if (a < 1.5) {
+            pattern.append("【极强客场】客队碾压局，警惕冷门；");
+        } else if (a < 1.8) {
+            pattern.append("【客队优势】客队占优；");
+        } else if (Math.abs(h - a) < 0.3) {
+            pattern.append("【势均力敌】两队接近，平局概率增加；");
+        }
+
+        if (d < 3.0) {
+            pattern.append("【平局热门】市场预期闷平可能大；");
+        } else if (d > 4.0) {
+            pattern.append("【平局冷门】市场认为会分胜负；");
+        }
+
+        return pattern.toString();
+    }
+
+    private String generateKeySignals(double h, double d, double a,
+                                       double homeProb, double drawProb, double awayProb) {
+        StringBuilder signals = new StringBuilder();
+
+        // 冷门信号
+        if (h < 1.5 && homeProb < 70) {
+            signals.append("⚠️ 极低赔率但概率未达70%%，冷门风险；");
+        }
+        if (a < 1.5 && awayProb < 70) {
+            signals.append("⚠️ 客队极低赔率，警惕主场爆冷；");
+        }
+
+        // 平局信号
+        if (drawProb > 28 && d > 3.3) {
+            signals.append("📊 平局概率与赔率背离，关注平局；");
+        }
+
+        // 价值信号
+        if (h > 2.5 && homeProb > 35) {
+            signals.append("💰 主胜可能存在价值；");
+        }
+        if (a > 2.5 && awayProb > 35) {
+            signals.append("💰 客胜可能存在价值；");
+        }
+
+        return signals.toString().isEmpty() ? "暂无特殊信号" : signals.toString();
     }
 
     /**
