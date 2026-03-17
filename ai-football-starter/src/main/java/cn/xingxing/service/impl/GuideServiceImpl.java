@@ -13,6 +13,8 @@ import cn.xingxing.vo.MatchInfoVo;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -34,6 +36,7 @@ public class GuideServiceImpl extends ServiceImpl<GuideMapper, Guide> implements
     private MatchInfoService matchInfoService;
 
     @Override
+    @CacheEvict(value = "guide", allEntries = true)
     public void initEngine() {
         this.remove(null);
         List<MatchInfoVo> matchList = matchInfoService.findMatchList();
@@ -72,6 +75,7 @@ public class GuideServiceImpl extends ServiceImpl<GuideMapper, Guide> implements
     }
 
     @Override
+    @Cacheable(value = "guide", key = "#usermessage", unless = "#result == null")
     public Guide findByQuestionName(String usermessage) {
         LambdaQueryWrapper<Guide> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Guide::getQuestionName, usermessage);

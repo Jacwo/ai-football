@@ -14,11 +14,11 @@ langchain4j:
       timeout: 60000
     streaming-chat-model:
       api-key: sk-173830c5bf894d97b35df2a23d107ab7
-      model-name: deepseek-reasoner
+      model-name: deepseek-chat
       log-requests: true
       log-responses: true
       base-url: https://api.deepseek.com
-      timeout: 60000
+      timeout: 120000
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver

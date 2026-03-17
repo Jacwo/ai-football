@@ -1,6 +1,7 @@
 package cn.xingxing.entity;
 
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Getter;
@@ -17,5 +18,7 @@ import lombok.Setter;
 public class Guide {
     @TableId
     private String matchId;
+
+    @TableField(value = "question_name")
     private String questionName;
 }

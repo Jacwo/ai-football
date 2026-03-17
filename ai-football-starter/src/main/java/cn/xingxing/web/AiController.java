@@ -1,8 +1,7 @@
 package cn.xingxing.web;
 
 
-import cn.xingxing.ai.Assistant;
-import cn.xingxing.ai.StreamingAssistant;
+import cn.xingxing.ai.Assistant;import cn.xingxing.ai.StreamingAssistant;
 import cn.xingxing.entity.Guide;
 import cn.xingxing.entity.SubMatchInfo;
 import cn.xingxing.dto.ApiResponse;
@@ -53,7 +52,7 @@ public class AiController {
         if(guide != null){
           return analysisService.analysisByMatchIdStream(guide.getMatchId());
         }
-        return streamingAssistant.chat(message.getMessages().toString());
+        return streamingAssistant.chat(userMessage);
     }
     @PostMapping("/ai/guest/ask")
     public ApiResponse<GuestAskDto> getGuestAsk() {
