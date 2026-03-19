@@ -118,37 +118,42 @@ public class EnhancedAIService {
 
             ## 分析框架（必须严格执行）
 
-            ### 第一步：概率计算
-            根据上面的隐含概率数据，评估市场对各结果的预期。
+            ### 第一步：同赔率历史数据分析（权重40%%）⭐核心依据
+            - 统计同赔率历史比赛中主胜/平局/客胜的实际结果分布
+            - 计算各结果的历史概率（如：30场中主胜15场=50%%）
+            - **这是最客观的预测基准，必须重点参考**
 
-            ### 第二步：数据验证
-            用同赔率历史结果验证市场预期是否合理：
-            - 统计同赔率比赛中主胜/平局/客胜的实际比例
-            - 对比隐含概率与历史实际概率的偏差
+            ### 第二步：市场赔率解读（权重30%%）
+            - 查看赔率隐含概率（已在上方表格中提供）
+            - 对比历史概率与隐含概率的差异
+            - 如果差异<10%%，市场预期合理，应跟随市场
+            - 如果差异>15%%，需要分析原因
 
-            ### 第三步：调整因素
-            根据以下因素调整概率：
-            - 近期状态（近5场胜率、进球数）
-            - 交锋记录（主客场优势）
-            - 情报影响（伤停、轮换）
+            ### 第三步：近期状态修正（权重20%%）
+            - 查看两队近5场比赛的状态（胜率、进球、失球）
+            - 查看近期交锋记录（主客场优势）
+            - 仅当近期状态有显著变化时，才调整历史概率（±5%%以内）
 
-            ### 第四步：价值判断
-            - 如果调整后概率 > 隐含概率 + 5%%，该结果有价值
-            - 关注凯利值 > 0 的选项
+            ### 第四步：其他因素（权重10%%）
+            - 考虑伤停、轮换等情报影响
+            - 赔率变动趋势
+            - 特殊比赛背景
 
             ### 第五步：最终决策
-            选择期望值最高的结果，而非简单的低赔率
+            - 综合以上分析，计算调整后的概率
+            - **优先选择综合概率最高的结果**
+            - 如果最高概率与次高概率差距<5%%，选择赔率更低（市场更认可）的结果
 
             ## 输出格式要求
 
             1. **比分预测**: 使用 `{比分}` 格式，如 `{2:1}`
             2. **胜负预测**: 使用 `【结果】` 格式，如 `【主胜】`
             3. 预测结果必须是：主胜、平局、客胜 三选一
-            4. **置信度**: 高/中/低
+            4. **置信度**: 高/中/低（必须标注）
 
-            ## 决策红线
-            - ✅ 必须：给出选择该结果的数据支撑
-            - ✅ 必须：说明主要风险点
+            ## 输出要求
+            - ✅ 必须：说明预测结果的数据支撑
+            - ✅ 必须：说明主要风险和不确定因素
             """,
             analysis.getHomeTeam(), analysis.getAwayTeam(),
             analysis.getLeague(), analysis.getMatchTime(),
@@ -192,10 +197,10 @@ public class EnhancedAIService {
             double drawProb = (1/d) / totalProb * 100;
             double awayProb = (1/a) / totalProb * 100;
 
-            // 计算凯利值
-            double homeKelly = (h * homeProb/100 - 1) / (h - 1);
-            double drawKelly = (d * drawProb/100 - 1) / (d - 1);
-            double awayKelly = (a * awayProb/100 - 1) / (a - 1);
+            // 计算凯利值 (公式: (p*b - q)/b, 其中p=胜率, q=1-p, b=赔率-1)
+            double homeKelly = calculateKelly(homeProb/100, h);
+            double drawKelly = calculateKelly(drawProb/100, d);
+            double awayKelly = calculateKelly(awayProb/100, a);
 
             // 分析赔率特征
             String pattern = analyzeOddsPattern(h, d, a);
@@ -223,28 +228,30 @@ public class EnhancedAIService {
 
             return String.format("""
 
-                ### 赔率深度分析（AI必读）
+                ### 赔率深度分析（参考数据）
 
-                #### 隐含概率（去除%.1f%%抽水）
-                | 结果 | 隐含概率 | 凯利值 | 价值判断 |
-                |------|----------|--------|----------|
-                | 主胜 | %.1f%% | %.3f | %s |
-                | 平局 | %.1f%% | %.3f | %s |
-                | 客胜 | %.1f%% | %.3f | %s |
+                #### 市场赔率隐含概率（去除%.1f%%抽水）
+                | 结果 | 隐含概率 | 凯利值参考 |
+                |------|----------|-----------|
+                | 主胜 | %.1f%% | %.3f |
+                | 平局 | %.1f%% | %.3f |
+                | 客胜 | %.1f%% | %.3f |
+
+                **说明**: 隐含概率反映市场对各结果的预期，凯利值仅供参考，不应作为主要决策依据。
 
                 #### 赔率特征
                 %s
 
-                #### 赔率变动
+                #### 赔率变动趋势
                 %s
 
-                #### 关键信号
+                #### 市场特征
                 %s
                 """,
                 margin,
-                homeProb, homeKelly, homeKelly > 0.05 ? "⭐有价值" : "一般",
-                drawProb, drawKelly, drawKelly > 0.05 ? "⭐有价值" : "一般",
-                awayProb, awayKelly, awayKelly > 0.05 ? "⭐有价值" : "一般",
+                homeProb, homeKelly,
+                drawProb, drawKelly,
+                awayProb, awayKelly,
                 pattern,
                 trend,
                 generateKeySignals(h, d, a, homeProb, drawProb, awayProb)
@@ -258,53 +265,67 @@ public class EnhancedAIService {
     private String analyzeOddsPattern(double h, double d, double a) {
         StringBuilder pattern = new StringBuilder();
 
+        // 主客队实力对比
         if (h < 1.5) {
-            pattern.append("【极强主场】主队绝对优势，但冷门价值高；");
+            pattern.append("【强势主场】市场认为主队有绝对优势；");
         } else if (h < 1.8) {
-            pattern.append("【主队优势】主队明显优势盘；");
+            pattern.append("【主队优势】市场看好主队；");
         } else if (a < 1.5) {
-            pattern.append("【极强客场】客队碾压局，警惕冷门；");
+            pattern.append("【强势客队】市场认为客队实力碾压；");
         } else if (a < 1.8) {
-            pattern.append("【客队优势】客队占优；");
+            pattern.append("【客队优势】市场看好客队；");
         } else if (Math.abs(h - a) < 0.3) {
-            pattern.append("【势均力敌】两队接近，平局概率增加；");
+            pattern.append("【势均力敌】两队实力接近；");
         }
 
+        // 平局概率判断
         if (d < 3.0) {
-            pattern.append("【平局热门】市场预期闷平可能大；");
+            pattern.append("【平局概率高】市场预期可能平局；");
         } else if (d > 4.0) {
-            pattern.append("【平局冷门】市场认为会分胜负；");
+            pattern.append("【分胜负预期】市场认为大概率分胜负；");
         }
 
         return pattern.toString();
+    }
+
+    /**
+     * 计算凯利值
+     * 公式: f = (p*b - q)/b
+     * p = 估计胜率, q = 1-p, b = 赔率-1
+     */
+    private double calculateKelly(double prob, double odds) {
+        if (odds <= 1) return 0;
+        double b = odds - 1;
+        double q = 1 - prob;
+        return (prob * b - q) / b;
     }
 
     private String generateKeySignals(double h, double d, double a,
                                        double homeProb, double drawProb, double awayProb) {
         StringBuilder signals = new StringBuilder();
 
-        // 冷门信号
-        if (h < 1.5 && homeProb < 70) {
-            signals.append("⚠️ 极低赔率但概率未达70%%，冷门风险；");
-        }
-        if (a < 1.5 && awayProb < 70) {
-            signals.append("⚠️ 客队极低赔率，警惕主场爆冷；");
-        }
-
-        // 平局信号
-        if (drawProb > 28 && d > 3.3) {
-            signals.append("📊 平局概率与赔率背离，关注平局；");
+        // 市场倾向性分析
+        if (h < 1.5) {
+            signals.append("市场极度看好主队(主胜概率%.1f%%)；".formatted(homeProb));
+        } else if (a < 1.5) {
+            signals.append("市场极度看好客队(客胜概率%.1f%%)；".formatted(awayProb));
+        } else if (Math.abs(h - a) < 0.3) {
+            signals.append("市场认为两队实力接近；");
         }
 
-        // 价值信号
-        if (h > 2.5 && homeProb > 35) {
-            signals.append("💰 主胜可能存在价值；");
-        }
-        if (a > 2.5 && awayProb > 35) {
-            signals.append("💰 客胜可能存在价值；");
+        // 平局概率分析
+        if (drawProb > 30) {
+            signals.append("平局概率较高(%.1f%%)；".formatted(drawProb));
+        } else if (drawProb < 20) {
+            signals.append("市场预期会分胜负；");
         }
 
-        return signals.toString().isEmpty() ? "暂无特殊信号" : signals.toString();
+        // 赔率分布特征
+        if (h < 1.8 || a < 1.8) {
+            signals.append("存在明显热门方；");
+        }
+
+        return signals.toString().isEmpty() ? "市场预期相对均衡" : signals.toString();
     }
 
     /**
