@@ -2,12 +2,14 @@ package cn.xingxing.service.impl;
 
 
 import cn.xingxing.data.TeamStatsService;
+import cn.xingxing.dto.user.BatchCheckDto;
+import cn.xingxing.dto.user.BatchCheckResponseDto;
 import cn.xingxing.entity.TeamStats;
 import cn.xingxing.service.MatchInfoService;
+import cn.xingxing.service.UserMatchService;
 import cn.xingxing.vo.MatchInfoVo;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import cn.xingxing.data.DataService;
 import cn.xingxing.entity.SubMatchInfo;
 import cn.xingxing.mapper.MatchInfoMapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -15,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -34,6 +35,7 @@ public class MatchInfoServiceImpl extends ServiceImpl<MatchInfoMapper, SubMatchI
 
     @Autowired
     private TeamStatsService teamStatsService;
+
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 

@@ -1,6 +1,7 @@
 package cn.xingxing.service.impl;
 
 
+import cn.xingxing.dto.user.UserMatchDto;
 import cn.xingxing.dto.user.UserPointDto;
 import cn.xingxing.entity.User;
 import cn.xingxing.dto.user.LoginUserResponse;
@@ -8,6 +9,7 @@ import cn.xingxing.dto.user.UserInfoDto;
 import cn.xingxing.common.exception.CommonException;
 import cn.xingxing.mapper.UserMapper;
 import cn.xingxing.service.SmsService;
+import cn.xingxing.service.UserMatchService;
 import cn.xingxing.service.UserService;
 import cn.xingxing.common.util.AuthTokenUtil;
 import cn.xingxing.common.util.RandomUtil;
@@ -28,7 +30,8 @@ import java.util.Map;
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
     @Autowired
     private SmsService smsService;
-
+    @Autowired
+    private UserMatchService userMatchService;
     @Override
     public LoginUserResponse login(String phone, String code) {
         boolean result = smsService.checkSmsCode(phone, code);
@@ -70,6 +73,30 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         queryWrapper.eq(User::getId, userPointDto.getId());
         User one = this.getOne(queryWrapper);
         one.setPoint(one.getPoint()- userPointDto.getDeductPoint());
-        return this.updateById(one);
+        this.updateById(one);
+        UserMatchDto userMatchDto =new UserMatchDto();
+        userMatchDto.setUserId(userPointDto.getId());
+        userMatchDto.setMatchId(userPointDto.getMatchId());
+        userMatchService.saveUserMatch(userMatchDto);
+        return true;
+    }
+
+    @Override
+    public UserInfoDto getUserInfo(UserPointDto userPointDto) {
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(User::getId, userPointDto.getId());
+        User one = this.getOne(queryWrapper);
+        if(one!=null){
+            UserInfoDto userInfo = new UserInfoDto();
+            userInfo.setPhone(one.getPhone());
+            userInfo.setId(one.getId());
+            userInfo.setUserName(one.getUserName());
+            userInfo.setStatus(one.getStatus());
+            userInfo.setGender(1);
+            userInfo.setPoint(one.getPoint());
+            userInfo.setCreateTime(one.getCreateTime().toString());
+        }
+
+        return null;
     }
 }

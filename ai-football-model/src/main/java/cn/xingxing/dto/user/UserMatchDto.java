@@ -9,9 +9,7 @@ import lombok.Data;
  * @Version: 1.0
  */
 @Data
-public class UserPointDto {
-    private String id;
-    private Long deductPoint;
+public class UserMatchDto {
+    private String userId;
     private String matchId;
-
 }

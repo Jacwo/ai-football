@@ -3,6 +3,8 @@ package cn.xingxing.web;
 
 import cn.xingxing.data.TeamStatsService;
 import cn.xingxing.dto.TeamStatsVo;
+import cn.xingxing.dto.user.BatchCheckDto;
+import cn.xingxing.dto.user.BatchCheckResponseDto;
 import cn.xingxing.entity.*;
 import cn.xingxing.dto.AnalysisResultDto;
 import cn.xingxing.dto.ApiResponse;
@@ -42,9 +44,16 @@ public class FootballController {
     @Autowired
     private InformationService informationService;
 
+
+    @Autowired
+    private UserMatchService userMatchService;
+
     @Autowired
     private HadListService hadListService;
-
+    @PostMapping("/batch/check/unlock")
+    public ApiResponse<BatchCheckResponseDto> batchCheckUnlock(@RequestBody BatchCheckDto batchCheckDto) {
+        return ApiResponse.success(userMatchService.batchCheckUnlock(batchCheckDto));
+    }
     /**
      * 健康检查
      */

@@ -1,6 +1,8 @@
 package cn.xingxing.service;
 
 
+import cn.xingxing.dto.user.BatchCheckDto;
+import cn.xingxing.dto.user.BatchCheckResponseDto;
 import cn.xingxing.entity.SubMatchInfo;
 import cn.xingxing.vo.MatchInfoVo;
 import com.baomidou.mybatisplus.extension.service.IService;
