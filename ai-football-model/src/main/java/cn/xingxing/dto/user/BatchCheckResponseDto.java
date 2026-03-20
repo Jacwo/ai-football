@@ -12,10 +12,6 @@ import java.util.List;
  */
 @Data
 public class BatchCheckResponseDto {
-    private List<MatchUnlockStaus> result;
-    @Data
-    public static class MatchUnlockStaus{
-        private String matchId;
-        private Boolean isUnlocked;
-    }
+    private String matchId;
+    private Boolean unlocked;
 }

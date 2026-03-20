@@ -51,7 +51,7 @@ public class FootballController {
     @Autowired
     private HadListService hadListService;
     @PostMapping("/batch/check/unlock")
-    public ApiResponse<BatchCheckResponseDto> batchCheckUnlock(@RequestBody BatchCheckDto batchCheckDto) {
+    public ApiResponse<List<BatchCheckResponseDto>> batchCheckUnlock(@RequestBody BatchCheckDto batchCheckDto) {
         return ApiResponse.success(userMatchService.batchCheckUnlock(batchCheckDto));
     }
     /**

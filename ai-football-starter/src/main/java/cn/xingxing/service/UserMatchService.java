@@ -4,6 +4,8 @@ import cn.xingxing.dto.user.BatchCheckDto;
 import cn.xingxing.dto.user.BatchCheckResponseDto;
 import cn.xingxing.dto.user.UserMatchDto;
 
+import java.util.List;
+
 /**
  * @Author: yangyuanliang
  * @Date: 2026-01-09
@@ -13,5 +15,5 @@ public interface UserMatchService {
 
     void saveUserMatch(UserMatchDto userMatchDto);
 
-    BatchCheckResponseDto batchCheckUnlock(BatchCheckDto batchCheckDto);
+    List<BatchCheckResponseDto> batchCheckUnlock(BatchCheckDto batchCheckDto);
 }

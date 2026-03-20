@@ -32,7 +32,7 @@ public class UserMatchServiceImpl extends ServiceImpl<UserMatchMapper, UserMatch
     }
 
     @Override
-    public BatchCheckResponseDto batchCheckUnlock(BatchCheckDto batchCheckDto) {
+    public List<BatchCheckResponseDto> batchCheckUnlock(BatchCheckDto batchCheckDto) {
         List<String> matchIds = batchCheckDto.getMatchIds();
         String userId = batchCheckDto.getUserId();
 
@@ -48,17 +48,14 @@ public class UserMatchServiceImpl extends ServiceImpl<UserMatchMapper, UserMatch
                 .toList();
 
         // 构建返回结果
-        BatchCheckResponseDto response = new BatchCheckResponseDto();
-        List<BatchCheckResponseDto.MatchUnlockStaus> result = matchIds.stream()
+
+        return matchIds.stream()
                 .map(matchId -> {
-                    BatchCheckResponseDto.MatchUnlockStaus status = new BatchCheckResponseDto.MatchUnlockStaus();
+                    BatchCheckResponseDto status = new BatchCheckResponseDto();
                     status.setMatchId(matchId);
-                    status.setIsUnlocked(unlockedMatchIds.contains(matchId));
+                    status.setUnlocked(unlockedMatchIds.contains(matchId));
                     return status;
                 })
                 .toList();
-        response.setResult(result);
-
-        return response;
     }
 }
