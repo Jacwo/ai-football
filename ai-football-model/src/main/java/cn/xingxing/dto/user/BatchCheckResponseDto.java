@@ -16,6 +16,6 @@ public class BatchCheckResponseDto {
     @Data
     public static class MatchUnlockStaus{
         private String matchId;
-        private Boolean unlocked;
+        private Boolean isUnlocked;
     }
 }

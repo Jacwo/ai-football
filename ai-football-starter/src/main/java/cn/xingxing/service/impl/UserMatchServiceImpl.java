@@ -53,7 +53,7 @@ public class UserMatchServiceImpl extends ServiceImpl<UserMatchMapper, UserMatch
                 .map(matchId -> {
                     BatchCheckResponseDto.MatchUnlockStaus status = new BatchCheckResponseDto.MatchUnlockStaus();
                     status.setMatchId(matchId);
-                    status.setUnlocked(unlockedMatchIds.contains(matchId));
+                    status.setIsUnlocked(unlockedMatchIds.contains(matchId));
                     return status;
                 })
                 .toList();
