@@ -184,7 +184,7 @@ public class EnhancedAIService {
         }
 
         try {
-            HadList latest = hadLists.getFirst();
+            HadList latest = hadLists.getLast();
             double h = Double.parseDouble(latest.getH());
             double d = Double.parseDouble(latest.getD());
             double a = Double.parseDouble(latest.getA());
@@ -208,7 +208,7 @@ public class EnhancedAIService {
             // 分析赔率变化
             String trend = "";
             if (hadLists.size() >= 2) {
-                HadList first = hadLists.getLast();
+                HadList first = hadLists.getFirst();
                 double hChange = h - Double.parseDouble(first.getH());
                 double dChange = d - Double.parseDouble(first.getD());
                 double aChange = a - Double.parseDouble(first.getA());
@@ -455,9 +455,9 @@ public class EnhancedAIService {
         try {
             var odds = analysis.getHadLists();
             if (odds != null && !odds.isEmpty()) {
-                double h = Double.parseDouble(odds.getFirst().getH());
-                double d = Double.parseDouble(odds.getFirst().getD());
-                double a = Double.parseDouble(odds.getFirst().getA());
+                double h = Double.parseDouble(odds.getLast().getH());
+                double d = Double.parseDouble(odds.getLast().getD());
+                double a = Double.parseDouble(odds.getLast().getA());
 
                 if (h < 1.5) {
                     scenario.append("强队主场大胜盘 ");
@@ -490,34 +490,34 @@ public class EnhancedAIService {
         if (analysis.getHadLists() == null || analysis.getHadLists().isEmpty()) {
             return "";
         }
-        var odds = analysis.getHadLists().getFirst();
+        var odds = analysis.getHadLists().getLast();
         return String.format("主%s平%s客%s", odds.getH(), odds.getD(), odds.getA());
     }
 
     private String getH(List<HadList> hadLists) {
         if (!CollectionUtils.isEmpty(hadLists)) {
-            return hadLists.getFirst().getH();
+            return hadLists.getLast().getH();
         }
         return "-";
     }
 
     private String getD(List<HadList> hadLists) {
         if (!CollectionUtils.isEmpty(hadLists)) {
-            return hadLists.getFirst().getD();
+            return hadLists.getLast().getD();
         }
         return "-";
     }
 
     private String getA(List<HadList> hadLists) {
         if (!CollectionUtils.isEmpty(hadLists)) {
-            return hadLists.getFirst().getA();
+            return hadLists.getLast().getA();
         }
         return "-";
     }
 
     private String getGoalLine(List<HadList> hhadLists) {
         if (!CollectionUtils.isEmpty(hhadLists)) {
-            return hhadLists.getFirst().getGoalLine();
+            return hhadLists.getLast().getGoalLine();
         }
         return "-";
     }

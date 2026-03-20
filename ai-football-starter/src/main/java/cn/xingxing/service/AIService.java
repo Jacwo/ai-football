@@ -62,9 +62,9 @@ public class AIService {
         aiAnalysisResult.setMatchTime(analysis.getMatchTime());
 
         if (!CollectionUtils.isEmpty(analysis.getHadLists())) {
-            aiAnalysisResult.setDraw(String.valueOf(analysis.getHadLists().getFirst().getD()));
-            aiAnalysisResult.setAwayWin(String.valueOf(analysis.getHadLists().getFirst().getA()));
-            aiAnalysisResult.setHomeWin(String.valueOf(analysis.getHadLists().getFirst().getH()));
+            aiAnalysisResult.setDraw(String.valueOf(analysis.getHadLists().getLast().getD()));
+            aiAnalysisResult.setAwayWin(String.valueOf(analysis.getHadLists().getLast().getA()));
+            aiAnalysisResult.setHomeWin(String.valueOf(analysis.getHadLists().getLast().getH()));
         }
 
         aiAnalysisResult.setAiAnalysis(chat);
