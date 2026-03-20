@@ -72,6 +72,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(User::getId, userPointDto.getId());
         User one = this.getOne(queryWrapper);
+        if(one.getPoint()<userPointDto.getDeductPoint()){
+            throw new CommonException(10003,"积分余额不足");
+        }
         one.setPoint(one.getPoint()- userPointDto.getDeductPoint());
         this.updateById(one);
         UserMatchDto userMatchDto =new UserMatchDto();
