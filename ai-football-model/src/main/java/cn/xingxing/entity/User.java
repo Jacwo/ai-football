@@ -25,4 +25,5 @@ public class User extends BaseEntity{
     private String phone;
     private String userName;
     private String status;
+    private Long point;
 }

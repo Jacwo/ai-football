@@ -1,6 +1,7 @@
 package cn.xingxing.service.impl;
 
 
+import cn.xingxing.dto.user.UserPointDto;
 import cn.xingxing.entity.User;
 import cn.xingxing.dto.user.LoginUserResponse;
 import cn.xingxing.dto.user.UserInfoDto;
@@ -40,6 +41,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 user.setPhone(phone);
                 user.setUserName("用户" + RandomUtil.generateUserName());
                 user.setStatus("1");
+                user.setPoint(3L);
                 this.save(user);
             }
             User dbUser = this.getOne(queryWrapper);
@@ -52,6 +54,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             userInfo.setUserName(dbUser.getUserName());
             userInfo.setStatus(dbUser.getStatus());
             userInfo.setGender(1);
+            userInfo.setPoint(dbUser.getPoint());
             userInfo.setCreateTime(dbUser.getCreateTime().toString());
             String authToken = AuthTokenUtil.createAuthToken(JSONObject.parseObject(JSONObject.toJSONString(userInfo), Map.class));
             loginUserResponse.setToken(authToken);
@@ -59,5 +62,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return loginUserResponse;
         }
         throw new CommonException(10002, "验证码错误");
+    }
+
+    @Override
+    public Boolean deductPoint(UserPointDto userPointDto) {
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(User::getId, userPointDto.getId());
+        User one = this.getOne(queryWrapper);
+        one.setPoint(one.getPoint()- userPointDto.getDeductPoint());
+        return this.updateById(one);
     }
 }

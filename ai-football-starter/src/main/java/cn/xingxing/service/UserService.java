@@ -1,6 +1,7 @@
 package cn.xingxing.service;
 
 import cn.xingxing.dto.user.LoginUserResponse;
+import cn.xingxing.dto.user.UserPointDto;
 
 /**
  * @Author: yangyuanliang
@@ -9,4 +10,6 @@ import cn.xingxing.dto.user.LoginUserResponse;
  */
 public interface UserService {
     LoginUserResponse login(String phone, String code);
+
+    Boolean deductPoint(UserPointDto userPointDto);
 }

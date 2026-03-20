@@ -14,6 +14,7 @@ public class UserInfoDto {
     private String phone;
     private String userName;
     private Integer gender;
+    private Long point;
     private String createTime;
     private String status;
 }

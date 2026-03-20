@@ -4,6 +4,7 @@ package cn.xingxing.web;
 import cn.xingxing.dto.ApiResponse;
 import cn.xingxing.dto.sms.UserLoginDto;
 import cn.xingxing.dto.user.LoginUserResponse;
+import cn.xingxing.dto.user.UserPointDto;
 import cn.xingxing.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,6 +25,11 @@ public class UserController {
     @PostMapping("/user/login")
     public ApiResponse<LoginUserResponse> sendSms(@RequestBody UserLoginDto userLoginDto) {
         return ApiResponse.success(userService.login(userLoginDto.getPhone(), userLoginDto.getCode()));
+    }
+
+    @PostMapping("/user/point/deduct")
+    public ApiResponse<Boolean> deductPoint(@RequestBody UserPointDto userPointDto) {
+        return ApiResponse.success(userService.deductPoint(userPointDto));
     }
 
 }
