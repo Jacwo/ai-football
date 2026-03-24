@@ -12,6 +12,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -49,6 +50,9 @@ public class DataServiceImpl implements DataService {
 
     @Autowired
     private TeamStatsService teamStatsService;
+
+    @Autowired
+    private MatchCalculatorMapper matchCalculatorMapper;
 
 
     @Override
@@ -262,6 +266,191 @@ public class DataServiceImpl implements DataService {
             });
             hadListMapperMapper.insertOrUpdate(hhadList);
         }
+    }
+
+    @Override
+    public void syncMatchCalculator() {
+        try {
+            String url = apiConfig.getMatchCalculatorUrl();
+            String response = HttpClientUtil.doGet(url, apiConfig.getHttpConnectTimeout());
+
+            MatchCalculatorResponse matchCalculatorResponse = JSONObject.parseObject(response, MatchCalculatorResponse.class);
+            MatchCalculatorValue value = matchCalculatorResponse.getValue();
+
+            if (value != null && !CollectionUtils.isEmpty(value.getMatchInfoList())) {
+                List<MatchCalculator> matchCalculators = value.getMatchInfoList().stream()
+                        .flatMap(info -> info.getSubMatchList().stream())
+                        .map(this::convertToMatchCalculator)
+                        .collect(Collectors.toList());
+
+                // 批量插入或更新到数据库
+                if (!CollectionUtils.isEmpty(matchCalculators)) {
+                    matchCalculators.forEach(matchCalculator -> {
+                        LambdaQueryWrapper<MatchCalculator> queryWrapper = new LambdaQueryWrapper<>();
+                        queryWrapper.eq(MatchCalculator::getMatchId,matchCalculator.getMatchId());
+                        MatchCalculator dbMatchCalculator = matchCalculatorMapper.selectOne(queryWrapper);
+                        if(dbMatchCalculator==null){
+                            matchCalculatorMapper.insert(matchCalculator);
+
+                        }else{
+                            BeanUtils.copyProperties(matchCalculator,dbMatchCalculator);
+                            matchCalculatorMapper.updateById(dbMatchCalculator);
+                        }
+                    });
+                    log.info("同步比赛计算器数据成功,共{}条", matchCalculators.size());
+                }
+            }
+        } catch (Exception e) {
+            log.error("同步比赛计算器数据失败", e);
+        }
+    }
+
+    /**
+     * 将SubMatchCalculator转换为MatchCalculator实体
+     */
+    private MatchCalculator convertToMatchCalculator(SubMatchCalculator subMatch) {
+        MatchCalculator calculator = MatchCalculator.builder()
+                .matchId(subMatch.getMatchId())
+                .matchNum(subMatch.getMatchNum())
+                .matchNumStr(subMatch.getMatchNumStr())
+                .matchNumDate(subMatch.getMatchNumDate())
+                .matchDate(subMatch.getMatchDate())
+                .matchTime(subMatch.getMatchTime())
+                .matchWeek(subMatch.getMatchWeek())
+                .homeTeamId(subMatch.getHomeTeamId())
+                .homeTeamAbbName(subMatch.getHomeTeamAbbName())
+                .homeTeamAbbEnName(subMatch.getHomeTeamAbbEnName())
+                .homeTeamAllName(subMatch.getHomeTeamAllName())
+                .homeTeamCode(subMatch.getHomeTeamCode())
+                .homeRank(subMatch.getHomeRank())
+                .awayTeamId(subMatch.getAwayTeamId())
+                .awayTeamAbbName(subMatch.getAwayTeamAbbName())
+                .awayTeamAbbEnName(subMatch.getAwayTeamAbbEnName())
+                .awayTeamAllName(subMatch.getAwayTeamAllName())
+                .awayTeamCode(subMatch.getAwayTeamCode())
+                .awayRank(subMatch.getAwayRank())
+                .leagueId(subMatch.getLeagueId())
+                .leagueAbbName(subMatch.getLeagueAbbName())
+                .leagueAllName(subMatch.getLeagueAllName())
+                .leagueCode(subMatch.getLeagueCode())
+                .matchStatus(subMatch.getMatchStatus())
+                .sellStatus(subMatch.getSellStatus())
+                .backColor(subMatch.getBackColor())
+                .businessDate(subMatch.getBusinessDate())
+                .isHide(subMatch.getIsHide())
+                .isHot(subMatch.getIsHot())
+                .taxDateNo(subMatch.getTaxDateNo())
+                .bettingSingle(subMatch.getBettingSingle())
+                .bettingAllUp(subMatch.getBettingAllUp())
+                .build();
+
+        // 设置HAD胜平负数据
+        if (subMatch.getHad() != null) {
+            HadOdds had = subMatch.getHad();
+            calculator.setHadH(had.getH());
+            calculator.setHadD(had.getD());
+            calculator.setHadA(had.getA());
+            calculator.setHadHf(had.getHf());
+            calculator.setHadDf(had.getDf());
+            calculator.setHadAf(had.getAf());
+            calculator.setHadUpdateDate(had.getUpdateDate());
+            calculator.setHadUpdateTime(had.getUpdateTime());
+        }
+
+        // 设置HHAD让球胜平负数据
+        if (subMatch.getHhad() != null) {
+            HhadOdds hhad = subMatch.getHhad();
+            calculator.setHhadH(hhad.getH());
+            calculator.setHhadD(hhad.getD());
+            calculator.setHhadA(hhad.getA());
+            calculator.setHhadGoalLine(hhad.getGoalLine());
+            calculator.setHhadGoalLineValue(hhad.getGoalLineValue());
+            calculator.setHhadHf(hhad.getHf());
+            calculator.setHhadDf(hhad.getDf());
+            calculator.setHhadAf(hhad.getAf());
+            calculator.setHhadUpdateDate(hhad.getUpdateDate());
+            calculator.setHhadUpdateTime(hhad.getUpdateTime());
+        }
+
+        // 设置TTG总进球数据
+        if (subMatch.getTtg() != null) {
+            TtgOdds ttg = subMatch.getTtg();
+            calculator.setTtgS0(ttg.getS0());
+            calculator.setTtgS1(ttg.getS1());
+            calculator.setTtgS2(ttg.getS2());
+            calculator.setTtgS3(ttg.getS3());
+            calculator.setTtgS4(ttg.getS4());
+            calculator.setTtgS5(ttg.getS5());
+            calculator.setTtgS6(ttg.getS6());
+            calculator.setTtgS7(ttg.getS7());
+            calculator.setTtgUpdateDate(ttg.getUpdateDate());
+            calculator.setTtgUpdateTime(ttg.getUpdateTime());
+        }
+
+        // 设置HAFU半全场数据
+        if (subMatch.getHafu() != null) {
+            HafuOdds hafu = subMatch.getHafu();
+            calculator.setHafuHh(hafu.getHh());
+            calculator.setHafuHd(hafu.getHd());
+            calculator.setHafuHa(hafu.getHa());
+            calculator.setHafuDh(hafu.getDh());
+            calculator.setHafuDd(hafu.getDd());
+            calculator.setHafuDa(hafu.getDa());
+            calculator.setHafuAh(hafu.getAh());
+            calculator.setHafuAd(hafu.getAd());
+            calculator.setHafuAa(hafu.getAa());
+            calculator.setHafuHhf(hafu.getHhf());
+            calculator.setHafuHdf(hafu.getHdf());
+            calculator.setHafuHaf(hafu.getHaf());
+            calculator.setHafuDhf(hafu.getDhf());
+            calculator.setHafuDdf(hafu.getDdf());
+            calculator.setHafuDaf(hafu.getDaf());
+            calculator.setHafuAhf(hafu.getAhf());
+            calculator.setHafuAdf(hafu.getAdf());
+            calculator.setHafuAaf(hafu.getAaf());
+            calculator.setHafuUpdateDate(hafu.getUpdateDate());
+            calculator.setHafuUpdateTime(hafu.getUpdateTime());
+        }
+
+        // 设置CRS比分数据
+        if (subMatch.getCrs() != null) {
+            CrsOdds crs = subMatch.getCrs();
+            calculator.setCrsS00s00(crs.getS00s00());
+            calculator.setCrsS00s01(crs.getS00s01());
+            calculator.setCrsS00s02(crs.getS00s02());
+            calculator.setCrsS00s03(crs.getS00s03());
+            calculator.setCrsS00s04(crs.getS00s04());
+            calculator.setCrsS00s05(crs.getS00s05());
+            calculator.setCrsS01s00(crs.getS01s00());
+            calculator.setCrsS01s01(crs.getS01s01());
+            calculator.setCrsS01s02(crs.getS01s02());
+            calculator.setCrsS01s03(crs.getS01s03());
+            calculator.setCrsS01s04(crs.getS01s04());
+            calculator.setCrsS01s05(crs.getS01s05());
+            calculator.setCrsS02s00(crs.getS02s00());
+            calculator.setCrsS02s01(crs.getS02s01());
+            calculator.setCrsS02s02(crs.getS02s02());
+            calculator.setCrsS02s03(crs.getS02s03());
+            calculator.setCrsS02s04(crs.getS02s04());
+            calculator.setCrsS02s05(crs.getS02s05());
+            calculator.setCrsS03s00(crs.getS03s00());
+            calculator.setCrsS03s01(crs.getS03s01());
+            calculator.setCrsS03s02(crs.getS03s02());
+            calculator.setCrsS03s03(crs.getS03s03());
+            calculator.setCrsS04s00(crs.getS04s00());
+            calculator.setCrsS04s01(crs.getS04s01());
+            calculator.setCrsS04s02(crs.getS04s02());
+            calculator.setCrsS05s00(crs.getS05s00());
+            calculator.setCrsS05s01(crs.getS05s01());
+            calculator.setCrsS05s02(crs.getS05s02());
+            calculator.setCrsS1sh(crs.getS1sh());
+            calculator.setCrsS1sd(crs.getS1sd());
+            calculator.setCrsS1sa(crs.getS1sa());
+            calculator.setCrsUpdateDate(crs.getUpdateDate());
+            calculator.setCrsUpdateTime(crs.getUpdateTime());
+        }
+
+        return calculator;
     }
 
     private List<SubMatchInfo> getMatchResult() {

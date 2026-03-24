@@ -73,6 +73,12 @@ public class FootballController {
         return ApiResponse.success(matchInfoService.findMatchById(matchId));
     }
 
+
+    @GetMapping("/calculator")
+    public ApiResponse<List<MatchCalculator>> getMatchCalculator() {
+        return ApiResponse.success(matchInfoService.getMatchCalculator());
+    }
+
     @PostMapping("/analysis/{matchId}")
     public ApiResponse<AnalysisResultDto> analysisByMatchId(@PathVariable String matchId) {
         MatchAnalysis matchAnalysis = analysisService.analysisByMatchId(matchId);

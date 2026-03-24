@@ -1,11 +1,15 @@
 package cn.xingxing.service.impl;
 
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.xingxing.common.exception.CommonException;
 import cn.xingxing.data.TeamStatsService;
+import cn.xingxing.dto.MatchCalculatorValue;
 import cn.xingxing.dto.user.BatchCheckDto;
 import cn.xingxing.dto.user.BatchCheckResponseDto;
+import cn.xingxing.entity.MatchCalculator;
 import cn.xingxing.entity.TeamStats;
+import cn.xingxing.mapper.MatchCalculatorMapper;
 import cn.xingxing.service.MatchInfoService;
 import cn.xingxing.service.UserMatchService;
 import cn.xingxing.vo.MatchInfoVo;
@@ -36,6 +40,10 @@ public class MatchInfoServiceImpl extends ServiceImpl<MatchInfoMapper, SubMatchI
 
     @Autowired
     private TeamStatsService teamStatsService;
+
+    @Autowired
+    private MatchCalculatorMapper matchCalculatorMapper;
+
 
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -81,6 +89,20 @@ public class MatchInfoServiceImpl extends ServiceImpl<MatchInfoMapper, SubMatchI
         }
         return matchInfoVo;
     }
+
+    @Override
+    public List<MatchCalculator> getMatchCalculator() {
+        List<MatchInfoVo> matchList = findMatchList();
+        if(CollectionUtil.isNotEmpty(matchList)){
+            List<Integer> list = matchList.stream().map(MatchInfoVo::getMatchId).toList();
+            LambdaQueryWrapper<MatchCalculator> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.in(MatchCalculator::getMatchId, list);
+            return matchCalculatorMapper.selectList(queryWrapper);
+        }
+        return List.of();
+    }
+
+
 
 
     private LocalDateTime parseMatchTime(String date, String time) {

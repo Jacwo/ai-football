@@ -57,5 +57,7 @@ public interface DataService {
 
    void syncHadListByMatchId(String matchId);
 
+   void syncMatchCalculator();
+
    MatchHistoryData getMatchHistoryData(String matchId);
 }
