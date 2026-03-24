@@ -26,4 +26,6 @@ public interface BetSchemeService {
      * @return 方案列表
      */
     List<BetSchemeVo> getUserSchemes(String userId);
+
+    Boolean deleteScheme(String id);
 }

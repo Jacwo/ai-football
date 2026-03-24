@@ -175,6 +175,33 @@ public class BetSchemeServiceImpl extends ServiceImpl<BetSchemeMapper, BetScheme
         return result;
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean deleteScheme(String id) {
+        try {
+            Long schemeId = Long.parseLong(id);
+
+            // 1. 删除方案选项
+            LambdaQueryWrapper<BetSchemeOption> optionWrapper = new LambdaQueryWrapper<>();
+            optionWrapper.eq(BetSchemeOption::getSchemeId, schemeId);
+            betSchemeOptionMapper.delete(optionWrapper);
+
+            // 2. 删除方案明细
+            LambdaQueryWrapper<BetSchemeDetail> detailWrapper = new LambdaQueryWrapper<>();
+            detailWrapper.eq(BetSchemeDetail::getSchemeId, schemeId);
+            betSchemeDetailMapper.delete(detailWrapper);
+
+            // 3. 删除方案主表
+            int rows = betSchemeMapper.deleteById(schemeId);
+
+            log.info("删除投注方案成功, 方案ID: {}, 影响行数: {}", id, rows);
+            return rows > 0;
+        } catch (Exception e) {
+            log.error("删除投注方案失败, 方案ID: {}, 错误: {}", id, e.getMessage(), e);
+            throw e;
+        }
+    }
+
     /**
      * 生成方案编号
      * @param userId 用户ID
