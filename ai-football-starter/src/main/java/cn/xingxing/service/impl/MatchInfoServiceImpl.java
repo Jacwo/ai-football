@@ -1,6 +1,7 @@
 package cn.xingxing.service.impl;
 
 
+import cn.xingxing.common.exception.CommonException;
 import cn.xingxing.data.TeamStatsService;
 import cn.xingxing.dto.user.BatchCheckDto;
 import cn.xingxing.dto.user.BatchCheckResponseDto;
@@ -68,6 +69,9 @@ public class MatchInfoServiceImpl extends ServiceImpl<MatchInfoMapper, SubMatchI
         LambdaQueryWrapper<SubMatchInfo> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(SubMatchInfo::getMatchId, matchId);
         SubMatchInfo subMatchInfo = matchInfoMapper.selectOne(queryWrapper);
+        if(subMatchInfo==null){
+            throw new CommonException(10005,"本场比赛不支持");
+        }
         BeanUtils.copyProperties(subMatchInfo, matchInfoVo);
         TeamStats homeStats = teamStatsService.selectByTeam(matchInfoVo.getHomeTeamAbbName(), "all");
         TeamStats awayStats = teamStatsService.selectByTeam(matchInfoVo.getAwayTeamAbbName(), "all");
