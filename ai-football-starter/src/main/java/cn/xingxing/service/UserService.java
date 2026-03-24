@@ -15,4 +15,6 @@ public interface UserService {
     Boolean deductPoint(UserPointDto userPointDto);
 
     UserInfoDto getUserInfo(UserPointDto userPointDto);
+
+    Boolean userSign(String userId);
 }

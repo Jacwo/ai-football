@@ -64,10 +64,9 @@ public class AiAnalysisResultServiceImpl  extends ServiceImpl<AiAnalysisResultMa
 
     @Override
     public Boolean deleteHistoryById(String matchId) {
-        LambdaQueryWrapper<AiAnalysisResult> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(AiAnalysisResult::getMatchId,matchId);
-         baseMapper.delete(queryWrapper);
-         return true;
+        // 物理删除：直接执行DELETE SQL，不会触发逻辑删除
+        baseMapper.physicalDeleteByMatchId(matchId);
+        return true;
     }
 
 

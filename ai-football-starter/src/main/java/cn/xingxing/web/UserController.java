@@ -8,10 +8,7 @@ import cn.xingxing.dto.user.UserInfoDto;
 import cn.xingxing.dto.user.UserPointDto;
 import cn.xingxing.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * @Author: yangyuanliang
@@ -38,4 +35,9 @@ public class UserController {
         return ApiResponse.success(userService.getUserInfo(userPointDto));
     }
 
+
+    @PostMapping("/user/sign/{userId}")
+    public ApiResponse<Boolean> userSign(@PathVariable String userId) {
+        return ApiResponse.success(userService.userSign(userId));
+    }
 }

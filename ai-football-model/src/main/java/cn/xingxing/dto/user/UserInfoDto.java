@@ -17,4 +17,5 @@ public class UserInfoDto {
     private Long point;
     private String createTime;
     private String status;
+    private Boolean signToday;
 }

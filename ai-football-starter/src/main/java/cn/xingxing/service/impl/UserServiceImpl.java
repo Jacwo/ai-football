@@ -19,6 +19,9 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Map;
 
 /**
@@ -59,6 +62,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             userInfo.setGender(1);
             userInfo.setPoint(dbUser.getPoint());
             userInfo.setCreateTime(dbUser.getCreateTime().toString());
+            userInfo.setSignToday(checkIfSignedToday(dbUser.getSignDateTime()));
             String authToken = AuthTokenUtil.createAuthToken(JSONObject.parseObject(JSONObject.toJSONString(userInfo), Map.class));
             loginUserResponse.setToken(authToken);
             loginUserResponse.setUserInfo(userInfo);
@@ -98,9 +102,62 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             userInfo.setGender(1);
             userInfo.setPoint(one.getPoint());
             userInfo.setCreateTime(one.getCreateTime().toString());
+
+            // 判断今日是否签到（以早上5点为分界点）
+            userInfo.setSignToday(checkIfSignedToday(one.getSignDateTime()));
+
             return userInfo;
         }
 
         throw new CommonException(10004, "用户不存在");
+    }
+
+    /**
+     * 判断是否在今天签到（以早上5点为分界点）
+     * @param signDateTime 签到时间
+     * @return true表示今天已签到，false表示未签到
+     */
+    private Boolean checkIfSignedToday(LocalDateTime signDateTime) {
+        if (signDateTime == null) {
+            return false;
+        }
+
+        // 获取当前时间
+        LocalDateTime now = LocalDateTime.now();
+
+        // 计算今天凌晨5点的时间
+        LocalDateTime todayFiveAM = LocalDate.now().atTime(5, 0, 0);
+
+        // 如果当前时间早于今天5点，则今天的开始时间应该是昨天5点
+        LocalDateTime signStartTime;
+        if (now.isBefore(todayFiveAM)) {
+            signStartTime = todayFiveAM.minusDays(1);
+        } else {
+            signStartTime = todayFiveAM;
+        }
+
+        // 判断签到时间是否在今天的签到有效期内（从早上5点开始到第二天早上5点）
+        return signDateTime.isAfter(signStartTime) || signDateTime.isEqual(signStartTime);
+    }
+
+    @Override
+    public Boolean userSign(String userId) {
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(User::getId, userId);
+        User one = this.getOne(queryWrapper);
+        if(one == null){
+            throw new CommonException(10004, "用户不存在");
+        }
+
+        // 检查今天是否已经签到
+        if(checkIfSignedToday(one.getSignDateTime())){
+            throw new CommonException(10005, "今日已签到，请勿重复签到");
+        }
+
+        // 签到并增加积分
+        one.setSignDateTime(LocalDateTime.now());
+        one.setPoint(one.getPoint() + 12);  // 签到奖励1积分
+        this.updateById(one);
+        return true;
     }
 }

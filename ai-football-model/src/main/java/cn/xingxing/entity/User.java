@@ -9,6 +9,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 /**
  * @Author: yangyuanliang
  * @Date: 2026-01-09
@@ -26,4 +28,5 @@ public class User extends BaseEntity{
     private String userName;
     private String status;
     private Long point;
+    private LocalDateTime signDateTime;
 }
