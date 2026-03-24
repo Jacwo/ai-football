@@ -18,4 +18,6 @@ public class UserInfoDto {
     private String createTime;
     private String status;
     private Boolean signToday;
+    private Boolean isAdmin;
+
 }

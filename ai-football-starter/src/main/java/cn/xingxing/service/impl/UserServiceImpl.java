@@ -47,7 +47,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 user.setPhone(phone);
                 user.setUserName("用户" + RandomUtil.generateUserName());
                 user.setStatus("1");
-                user.setPoint(3L);
+                user.setPoint(2L);
                 this.save(user);
             }
             User dbUser = this.getOne(queryWrapper);
@@ -61,6 +61,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             userInfo.setStatus(dbUser.getStatus());
             userInfo.setGender(1);
             userInfo.setPoint(dbUser.getPoint());
+            userInfo.setIsAdmin(dbUser.getIsAdmin());
             userInfo.setCreateTime(dbUser.getCreateTime().toString());
             userInfo.setSignToday(checkIfSignedToday(dbUser.getSignDateTime()));
             String authToken = AuthTokenUtil.createAuthToken(JSONObject.parseObject(JSONObject.toJSONString(userInfo), Map.class));
@@ -102,6 +103,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             userInfo.setGender(1);
             userInfo.setPoint(one.getPoint());
             userInfo.setCreateTime(one.getCreateTime().toString());
+            userInfo.setIsAdmin(one.getIsAdmin());
 
             // 判断今日是否签到（以早上5点为分界点）
             userInfo.setSignToday(checkIfSignedToday(one.getSignDateTime()));
@@ -156,7 +158,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         // 签到并增加积分
         one.setSignDateTime(LocalDateTime.now());
-        one.setPoint(one.getPoint() + 12);  // 签到奖励1积分
+        one.setPoint(one.getPoint() + 2);  // 签到奖励1积分
         this.updateById(one);
         return true;
     }

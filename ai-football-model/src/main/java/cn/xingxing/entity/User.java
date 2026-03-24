@@ -29,4 +29,5 @@ public class User extends BaseEntity{
     private String status;
     private Long point;
     private LocalDateTime signDateTime;
+    private Boolean isAdmin;
 }
