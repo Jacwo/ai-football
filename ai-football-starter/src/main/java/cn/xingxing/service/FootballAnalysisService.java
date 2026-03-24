@@ -1,5 +1,6 @@
 package cn.xingxing.service;
 
+import cn.xingxing.data.DataService;
 import cn.xingxing.data.TeamStatsService;
 import cn.xingxing.entity.*;
 import cn.xingxing.notify.NotifyService;
@@ -65,6 +66,8 @@ public class FootballAnalysisService {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    @Autowired
+    private DataService dataService;
 
     public List<MatchAnalysis> analyzeMatches(List<MatchInfoVo> validMatches) {
         log.info("开始分析比赛数据...");
@@ -125,7 +128,7 @@ public class FootballAnalysisService {
             //特征数据
             analysis.setMatchAnalysisData(getMatchAnalysisData(matchId));
             //近期比赛
-            analysis.setMatchHistoryData(getMatchHistoryData(matchId));
+            analysis.setMatchHistoryData(dataService.getMatchHistoryData(matchId));
             analysis.setHadLists(hadListService.findHadList(matchId));
             analysis.setHhadLists(hadListService.findHHadList(matchId));
             analysis.setHomeTeamStats(teamStatsService.selectByTeamName(match.getHomeTeamAbbName(), "home"));
@@ -145,13 +148,7 @@ public class FootballAnalysisService {
         }
     }
 
-    private MatchHistoryData getMatchHistoryData(String matchId) {
-        String url = String.format(apiConfig.getMatchHistoryUrl(), matchId);
-        String response = HttpClientUtil.doGet(url, apiConfig.getHttpConnectTimeout());
-        MatchHistoryResponse matchAnalysisResponse = JSONObject.parseObject(response, MatchHistoryResponse.class);
-        return matchAnalysisResponse.getValue();
 
-    }
 
     private MatchAnalysisData getMatchAnalysisData(String matchId) {
         try {
@@ -299,7 +296,7 @@ public class FootballAnalysisService {
         //特征数据
         analysis.setMatchAnalysisData(getMatchAnalysisData(matchId));
         //近期比赛
-        analysis.setMatchHistoryData(getMatchHistoryData(matchId));
+        analysis.setMatchHistoryData(dataService.getMatchHistoryData(matchId));
         analysis.setHadLists(hadListService.findHadList(matchId));
         analysis.setHhadLists(hadListService.findHHadList(matchId));
         analysis.setHomeTeamStats(teamStatsService.selectByTeamName(match.getHomeTeamAbbName(), "home"));

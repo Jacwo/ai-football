@@ -320,7 +320,14 @@ public class DataServiceImpl implements DataService {
         }
         return null;
     }
+    @Override
+    public MatchHistoryData getMatchHistoryData(String matchId) {
+        String url = String.format(apiConfig.getMatchHistoryUrl(), matchId);
+        String response = HttpClientUtil.doGet(url, apiConfig.getHttpConnectTimeout());
+        MatchHistoryResponse matchAnalysisResponse = JSONObject.parseObject(response, MatchHistoryResponse.class);
+        return matchAnalysisResponse.getValue();
 
+    }
 
     private List<HistoricalMatch> getRecentMatches(String matchId) {
         try {

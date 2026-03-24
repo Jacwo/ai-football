@@ -1,6 +1,8 @@
 package cn.xingxing.data;
 
 
+import cn.xingxing.dto.MatchHistoryData;
+
 /**
  * @Author: yangyuanliang
  * @Date: 2025-12-22
@@ -54,4 +56,6 @@ public interface DataService {
    int loadTeamStatsAway();
 
    void syncHadListByMatchId(String matchId);
+
+   MatchHistoryData getMatchHistoryData(String matchId);
 }

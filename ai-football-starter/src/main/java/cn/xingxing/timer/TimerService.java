@@ -70,10 +70,18 @@ public class TimerService{
     }
 
 
-    @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:120000}", fixedDelayString = "${football.api.schedule-fixed-delay:260000}")
+    @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:120000}", fixedDelayString = "${football.api.schedule-fixed-delay:28800000}")
     public void syncSimilarMatch() {
         log.info("定时同步同奖信息启动");
         dataService.syncSimilarMatch();
+    }
+
+
+
+    @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:10000}", fixedDelayString = "${football.api.schedule-fixed-delay:28800000}")
+    public void syncHistoryData() {
+        log.info("定时同步历史交锋");
+        dataService.syncHistoryData();
     }
 
 

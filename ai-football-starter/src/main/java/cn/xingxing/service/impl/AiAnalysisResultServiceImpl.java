@@ -62,5 +62,13 @@ public class AiAnalysisResultServiceImpl  extends ServiceImpl<AiAnalysisResultMa
         return PageConvertUtils.convert(page, AiAnalysisResult.class);
     }
 
+    @Override
+    public Boolean deleteHistoryById(String matchId) {
+        LambdaQueryWrapper<AiAnalysisResult> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(AiAnalysisResult::getMatchId,matchId);
+         baseMapper.delete(queryWrapper);
+         return true;
+    }
+
 
 }

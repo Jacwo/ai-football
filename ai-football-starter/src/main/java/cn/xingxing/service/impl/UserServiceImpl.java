@@ -98,8 +98,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             userInfo.setGender(1);
             userInfo.setPoint(one.getPoint());
             userInfo.setCreateTime(one.getCreateTime().toString());
+            return userInfo;
         }
 
-        return null;
+        throw new CommonException(10004, "用户不存在");
     }
 }

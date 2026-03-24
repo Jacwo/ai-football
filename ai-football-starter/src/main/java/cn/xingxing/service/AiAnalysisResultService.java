@@ -18,4 +18,6 @@ public interface AiAnalysisResultService extends IService<AiAnalysisResult> {
     AiAnalysisResultVo findByMatchId(String matchId);
 
     PageVO<AiAnalysisResult> matchInfoHistoryList(AnalysisPageDTO analysisPageDTO);
+
+    Boolean deleteHistoryById(String matchId);
 }

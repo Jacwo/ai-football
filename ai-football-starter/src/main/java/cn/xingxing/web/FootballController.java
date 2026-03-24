@@ -1,14 +1,12 @@
 package cn.xingxing.web;
 
 
+import cn.xingxing.data.DataService;
 import cn.xingxing.data.TeamStatsService;
-import cn.xingxing.dto.TeamStatsVo;
+import cn.xingxing.dto.*;
 import cn.xingxing.dto.user.BatchCheckDto;
 import cn.xingxing.dto.user.BatchCheckResponseDto;
 import cn.xingxing.entity.*;
-import cn.xingxing.dto.AnalysisResultDto;
-import cn.xingxing.dto.ApiResponse;
-import cn.xingxing.dto.MatchAnalysis;
 import cn.xingxing.service.*;
 import cn.xingxing.vo.MatchInfoVo;
 import com.alibaba.fastjson.JSONObject;
@@ -50,6 +48,9 @@ public class FootballController {
 
     @Autowired
     private HadListService hadListService;
+    @Autowired
+    private DataService dataService;
+
     @PostMapping("/batch/check/unlock")
     public ApiResponse<List<BatchCheckResponseDto>> batchCheckUnlock(@RequestBody BatchCheckDto batchCheckDto) {
         return ApiResponse.success(userMatchService.batchCheckUnlock(batchCheckDto));
@@ -119,6 +120,13 @@ public class FootballController {
     public ApiResponse<List<HadList>> getOddsData(@PathVariable String matchId) {
         List<HadList> hadList = hadListService.findHadList(matchId);
         return ApiResponse.success(hadList);
+    }
+
+
+    @PostMapping("/history/{matchId}")
+    public ApiResponse<MatchHistoryData> getHistory(@PathVariable String matchId) {
+        MatchHistoryData matchHistoryData = dataService.getMatchHistoryData(matchId);
+        return ApiResponse.success(matchHistoryData);
     }
 
 }

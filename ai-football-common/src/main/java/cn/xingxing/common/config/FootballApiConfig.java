@@ -14,7 +14,7 @@ public class FootballApiConfig {
     private String fixedBonusUrl = "https://webapi.sporttery.cn/gateway/uniform/football/getFixedBonusV1.qry?clientCode=3001&matchId=";
     private String searchOddsUrl = "https://webapi.sporttery.cn/gateway/uniform/football/searchOddsV1.qry?channel=c&type=&single=0&h=%s&a=%s&d=%s";
     private String searchOddsUrl2 = "https://webapi.sporttery.cn/gateway/uniform/football/searchOddsV1.qry?channel=c&type=&single=1&h=%s&a=%s&d=%s";
-
+    //历史交锋
     private String resultHistoryUrl = "https://webapi.sporttery.cn/gateway/uniform/football/getResultHistoryV1.qry?" +
             "sportteryMatchId=%s&termLimits=10&tournamentFlag=0&homeAwayFlag=0";
     //比赛近况

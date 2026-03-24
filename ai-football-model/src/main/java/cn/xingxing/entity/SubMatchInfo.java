@@ -24,6 +24,7 @@ public class SubMatchInfo extends BaseEntity {
     private String matchDate;
     private int matchNum;
     private String matchNumStr;
+    //1.待开售 3.暂停销售
     private String matchStatus;
     private String matchStatusName;
     private String matchTime;

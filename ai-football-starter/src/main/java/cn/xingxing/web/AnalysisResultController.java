@@ -33,4 +33,9 @@ public class AnalysisResultController {
         AiAnalysisResultVo byMatchId = aiAnalysisResultService.findByMatchId(matchId);
         return ApiResponse.success(byMatchId);
     }
+
+    @GetMapping("/delete/{matchId}")
+    public ApiResponse<Boolean> deleteHistoryById(@PathVariable String matchId) {
+        return ApiResponse.success(aiAnalysisResultService.deleteHistoryById(matchId));
+    }
 }
