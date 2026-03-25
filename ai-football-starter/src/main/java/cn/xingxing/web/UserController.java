@@ -6,6 +6,7 @@ import cn.xingxing.dto.sms.UserLoginDto;
 import cn.xingxing.dto.user.LoginUserResponse;
 import cn.xingxing.dto.user.UserInfoDto;
 import cn.xingxing.dto.user.UserPointDto;
+import cn.xingxing.dto.user.WxLoginDto;
 import cn.xingxing.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -40,4 +41,12 @@ public class UserController {
     public ApiResponse<Boolean> userSign(@PathVariable String userId) {
         return ApiResponse.success(userService.userSign(userId));
     }
+
+
+    @PostMapping("/user/wx/login")
+    public ApiResponse<LoginUserResponse> wxLogin(@RequestBody WxLoginDto wxLoginDto) {
+        return ApiResponse.success(userService.wxLogin(wxLoginDto.getCode()));
+    }
+
+
 }

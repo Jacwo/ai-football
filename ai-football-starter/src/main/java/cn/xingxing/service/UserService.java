@@ -17,4 +17,6 @@ public interface UserService {
     UserInfoDto getUserInfo(UserPointDto userPointDto);
 
     Boolean userSign(String userId);
+
+    LoginUserResponse wxLogin(String code);
 }

@@ -11,6 +11,7 @@ import cn.xingxing.mapper.UserMapper;
 import cn.xingxing.service.SmsService;
 import cn.xingxing.service.UserMatchService;
 import cn.xingxing.service.UserService;
+import cn.xingxing.service.WeChatService;
 import cn.xingxing.common.util.AuthTokenUtil;
 import cn.xingxing.common.util.RandomUtil;
 import com.alibaba.fastjson.JSONObject;
@@ -35,6 +36,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private SmsService smsService;
     @Autowired
     private UserMatchService userMatchService;
+    @Autowired
+    private WeChatService weChatService;
     @Override
     public LoginUserResponse login(String phone, String code) {
         boolean result = smsService.checkSmsCode(phone, code);
@@ -161,5 +164,57 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         one.setPoint(one.getPoint() +1);  // 签到奖励1积分
         this.updateById(one);
         return true;
+    }
+
+    @Override
+    public LoginUserResponse wxLogin(String code) {
+        // 1. 通过 code 换取 openId 和 session_key
+        JSONObject sessionInfo = weChatService.code2Session(code);
+        String openId = sessionInfo.getString("openid");
+
+        if (openId == null || openId.isEmpty()) {
+            throw new CommonException(10008, "获取微信用户信息失败");
+        }
+
+        // 2. 根据 openId 查询用户是否存在
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(User::getOpenId, openId);
+        User user = this.getOne(queryWrapper);
+
+        // 3. 如果用户不存在,创建新用户
+        if (user == null) {
+            user = new User();
+            user.setOpenId(openId);
+            user.setUserName("微信用户" + RandomUtil.generateUserName());
+            user.setStatus("1");
+            user.setPoint(2L);  // 新用户赠送2积分
+            this.save(user);
+            // 重新查询获取完整用户信息
+            user = this.getOne(queryWrapper);
+        }
+
+        // 4. 构建用户信息和 token
+        UserInfoDto userInfo = new UserInfoDto();
+        userInfo.setPhone(user.getPhone());
+        userInfo.setId(user.getId());
+        userInfo.setUserName(user.getUserName());
+        userInfo.setStatus(user.getStatus());
+        userInfo.setGender(1);
+        userInfo.setPoint(user.getPoint());
+        userInfo.setIsAdmin(user.getIsAdmin());
+        userInfo.setCreateTime(user.getCreateTime().toString());
+        userInfo.setSignToday(checkIfSignedToday(user.getSignDateTime()));
+
+        // 5. 生成 token
+        String authToken = AuthTokenUtil.createAuthToken(
+            JSONObject.parseObject(JSONObject.toJSONString(userInfo), Map.class)
+        );
+
+        // 6. 返回登录响应
+        LoginUserResponse loginUserResponse = new LoginUserResponse();
+        loginUserResponse.setToken(authToken);
+        loginUserResponse.setUserInfo(userInfo);
+
+        return loginUserResponse;
     }
 }

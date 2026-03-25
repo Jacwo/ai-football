@@ -30,4 +30,5 @@ public class User extends BaseEntity{
     private Long point;
     private LocalDateTime signDateTime;
     private Boolean isAdmin;
+    private String openId;  // 微信小程序用户唯一标识
 }

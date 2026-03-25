@@ -35,6 +35,13 @@ football:
     # 飞书Webhook
     feishu-webhook-url: "https://open.feishu.cn/open-apis/bot/v2/hook/a553e701-25e0-4e58-ad26-920fde4c2631"
 
+# 微信小程序配置
+wechat:
+  miniapp:
+    app-id: your_app_id_here  # 请替换为你的微信小程序 AppId
+    app-secret: your_app_secret_here  # 请替换为你的微信小程序 AppSecret
+    code2session-url: "https://api.weixin.qq.com/sns/jscode2session"
+
 mybatis-plus:
   mapper-locations: classpath:/mapper/*Mapper.xml
   global-config:
