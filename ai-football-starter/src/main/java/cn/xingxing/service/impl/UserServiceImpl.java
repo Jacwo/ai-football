@@ -230,7 +230,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if(one == null){
             throw new CommonException(10004, "用户不存在");
         }
-        if(phoneUser!=null){
+        if(phoneUser!=null && !phoneUser.getId().equals(userUpdateDto.getUserId())){
             one.setPoint(phoneUser.getPoint()+one.getPoint());
             one.setIsAdmin(phoneUser.getIsAdmin());
             one.setStatus(phoneUser.getStatus());
