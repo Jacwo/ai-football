@@ -158,7 +158,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         // 签到并增加积分
         one.setSignDateTime(LocalDateTime.now());
-        one.setPoint(one.getPoint() + 2);  // 签到奖励1积分
+        one.setPoint(one.getPoint() +1);  // 签到奖励1积分
         this.updateById(one);
         return true;
     }
