@@ -235,6 +235,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             one.setIsAdmin(phoneUser.getIsAdmin());
             one.setStatus(phoneUser.getStatus());
             one.setSignDateTime(phoneUser.getSignDateTime());
+            phoneUser.setPhone(phoneUser.getPhone()+"_1");
             this.removeById(phoneUser);
         }
         one.setPoint(one.getPoint()+5);
