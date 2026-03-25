@@ -171,12 +171,12 @@ public class MatchCalculator extends BaseEntity {
     private String taxDateNo;
 
     /**
-     * 让球过关单关
+     * 过关单关
      */
     private Integer bettingSingle;
 
     /**
-     * 让球过关串关
+     * 让球过关单关
      */
     private Integer bettingAllUp;
 

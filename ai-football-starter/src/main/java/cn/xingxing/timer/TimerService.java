@@ -40,7 +40,7 @@ public class TimerService{
     /**
      * 定时分析任务（每4小时执行一次）
      */
-    @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:10000}", fixedDelayString = "${football.api.schedule-fixed-delay:14400000}")
+   // @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:10000}", fixedDelayString = "${football.api.schedule-fixed-delay:14400000}")
     public void scheduledAnalysis() {
         log.info("定时分析任务启动");
 
@@ -54,7 +54,7 @@ public class TimerService{
     }
 
 
-    @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:20000}", fixedDelayString = "${football.api.schedule-fixed-delay:360000}")
+   // @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:20000}", fixedDelayString = "${football.api.schedule-fixed-delay:360000}")
     public void syncMatchInfoData() {
         log.info("定时同步比赛信息启动");
         dataService.syncMatchInfoData();
@@ -68,14 +68,14 @@ public class TimerService{
 
 
 
-    @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:20000}", fixedDelayString = "${football.api.schedule-fixed-delay:60000}")
+ //   @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:20000}", fixedDelayString = "${football.api.schedule-fixed-delay:60000}")
     public void syncNeedData() {
         log.info("定时同步赔率信息启动");
         dataService.syncHadListData();
     }
 
 
-    @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:120000}", fixedDelayString = "${football.api.schedule-fixed-delay:28800000}")
+  //  @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:120000}", fixedDelayString = "${football.api.schedule-fixed-delay:28800000}")
     public void syncSimilarMatch() {
         log.info("定时同步同奖信息启动");
         dataService.syncSimilarMatch();
@@ -83,14 +83,14 @@ public class TimerService{
 
 
 
-    @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:10000}", fixedDelayString = "${football.api.schedule-fixed-delay:28800000}")
+  //  @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:10000}", fixedDelayString = "${football.api.schedule-fixed-delay:28800000}")
     public void syncHistoryData() {
         log.info("定时同步历史交锋");
         dataService.syncHistoryData();
     }
 
 
-    @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:24000}", fixedDelayString = "${football.api.schedule-fixed-delay:28800000}")
+   // @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:24000}", fixedDelayString = "${football.api.schedule-fixed-delay:28800000}")
     public void syncXgData() {
         log.info("定时同步Xg信息启动");
 

@@ -212,7 +212,7 @@ public class DataServiceImpl implements DataService {
                     saveOrUpdateMatchResultDetail(matchResultDetail);
 
                     // 4. 只更新ai_analysis_result表的比分字段
-                    analysisResult.setMatchResult(matchResultDetail.getSectionsNo999());
+                    analysisResult.setMatchResult(matchResultDetail.getCrsResult());
                     aiAnalysisResultMapper.updateById(analysisResult);
 
                     // 5. 更新投注方案选项的中奖状态
@@ -451,6 +451,9 @@ public class DataServiceImpl implements DataService {
      * 将SubMatchCalculator转换为MatchCalculator实体
      */
     private MatchCalculator convertToMatchCalculator(SubMatchCalculator subMatch) {
+        List<PoolListDto> poolList = subMatch.getPoolList();
+        Map<String, Integer> collect = poolList.stream().collect(Collectors.toMap(PoolListDto::getPoolCode, PoolListDto::getBettingSingle));
+
         MatchCalculator calculator = MatchCalculator.builder()
                 .matchId(subMatch.getMatchId())
                 .matchNum(subMatch.getMatchNum())
@@ -482,11 +485,10 @@ public class DataServiceImpl implements DataService {
                 .isHide(subMatch.getIsHide())
                 .isHot(subMatch.getIsHot())
                 .taxDateNo(subMatch.getTaxDateNo())
-                .bettingSingle(subMatch.getBettingSingle())
-                .bettingAllUp(subMatch.getBettingAllUp())
+                .bettingSingle(collect.get("HAD"))
+                .bettingAllUp(collect.get("HHAD"))
                 .build();
-
-        // 设置HAD胜平负数据
+    // 设置HAD胜平负数据
         if (subMatch.getHad() != null) {
             HadOdds had = subMatch.getHad();
             calculator.setHadH(had.getH());

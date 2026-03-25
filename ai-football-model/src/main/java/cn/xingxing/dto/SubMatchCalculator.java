@@ -2,6 +2,8 @@ package cn.xingxing.dto;
 
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * 子比赛计算器数据
  * @Author: yangyuanliang
@@ -55,4 +57,5 @@ public class SubMatchCalculator {
     private TtgOdds ttg;
     private HafuOdds hafu;
     private CrsOdds crs;
+    private List<PoolListDto> poolList;
 }
