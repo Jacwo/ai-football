@@ -185,6 +185,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (user == null) {
             user = new User();
             user.setOpenId(openId);
+            user.setPhone(RandomUtil.generateUserName());
             user.setUserName("微信用户" + RandomUtil.generateUserName());
             user.setStatus("1");
             user.setPoint(2L);  // 新用户赠送2积分
