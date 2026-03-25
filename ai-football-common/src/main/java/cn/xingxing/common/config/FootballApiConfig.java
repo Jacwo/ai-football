@@ -23,6 +23,63 @@ public class FootballApiConfig {
     //比赛结果
     private String matchResultUrl = "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?" +
             "method=result&pageNo=1&pageType=0&pageSize=300";
+    /**
+     * {
+     *     "dataFrom": "",
+     *     "emptyFlag": false,
+     *     "errorCode": "0",
+     *     "errorMessage": "处理成功",
+     *     "success": true,
+     *     "value": {
+     *         "eventList": [],
+     *         "matchId": 2038556,
+     *         "matchMinute": "",
+     *         "matchMinuteExtra": "",
+     *         "matchPhaseTc": "",
+     *         "matchPhaseTcName": "",
+     *         "matchResultList": [
+     *             {
+     *                 "combination": "D",
+     *                 "combinationDesc": "(-1)平",
+     *                 "odds": "3.55",
+     *                 "poolCode": "HHAD"
+     *             },
+     *             {
+     *                 "combination": "A:H",
+     *                 "combinationDesc": "负胜",
+     *                 "odds": "18.00",
+     *                 "poolCode": "HAFU"
+     *             },
+     *             {
+     *                 "combination": "3:2",
+     *                 "combinationDesc": "3:2",
+     *                 "odds": "17.00",
+     *                 "poolCode": "CRS"
+     *             },
+     *             {
+     *                 "combination": "5",
+     *                 "combinationDesc": "5",
+     *                 "odds": "7.00",
+     *                 "poolCode": "TTG"
+     *             },
+     *             {
+     *                 "combination": "H",
+     *                 "combinationDesc": "胜",
+     *                 "odds": "1.67",
+     *                 "poolCode": "HAD"
+     *             }
+     *         ],
+     *         "matchStatus": "11",
+     *         "matchStatusName": "已完成",
+     *         "poolList": [],
+     *         "sectionsExtra": "",
+     *         "sectionsNo1": "",
+     *         "sectionsNo999": "",
+     *         "sectionsPenalty": ""
+     *     }
+     * }
+     */
+    private String matchResultDetailUrl = "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchGeneral.qry?matchId=%s&matchStatus=11";
 
     private String matchCalculatorUrl= "https://webapi.sporttery.cn/gateway/uniform/football/getMatchCalculatorV1.qry?channel=c";
     //比赛特征

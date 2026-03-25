@@ -48,7 +48,7 @@ public class BetSchemeController {
         return ApiResponse.success(schemes);
     }
 
-    @GetMapping("/delete/{id}")
+    @PostMapping("/delete/{id}")
     public ApiResponse<Boolean> deleteScheme(@PathVariable String id) {
         log.info("查询删除方案列表, id: {}", id);
         return ApiResponse.success(betSchemeService.deleteScheme(id));

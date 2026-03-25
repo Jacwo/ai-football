@@ -153,6 +153,10 @@ public class BetSchemeServiceImpl extends ServiceImpl<BetSchemeMapper, BetScheme
                                 .optionTypeDesc(getOptionTypeDesc(option.getOptionType()))
                                 .optionValue(option.getOptionValue())
                                 .odds(option.getOdds())
+                                .matchResult(option.getMatchResult())
+                                .matchResultDesc(option.getMatchResultDesc())
+                                .checkTime(option.getCheckTime())
+                                .resultOdds(option.getResultOdds())
                                 .isHit(option.getIsHit())
                                 .build())
                         .collect(Collectors.toList());

@@ -28,7 +28,9 @@ public class SubMatchInfo extends BaseEntity {
     private String matchStatus;
     private String matchStatusName;
     private String matchTime;
+    //
     private String sectionsNo1;
+    //全场比分
     private String sectionsNo999;
     //ke
     private String awayWin;

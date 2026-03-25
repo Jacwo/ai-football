@@ -61,7 +61,7 @@ public class TimerService{
         dataService.syncMatchResult();
     }
 
-    @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:10000}", fixedDelayString = "${football.api.schedule-fixed-delay:360000}")
+    @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:10000}", fixedDelayString = "${football.api.schedule-fixed-delay:120000}")
     public void syncMatchCalculator() {
         dataService.syncMatchCalculator();
     }

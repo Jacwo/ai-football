@@ -147,5 +147,26 @@ public class BetSchemeVo {
          * 是否命中(0-未命中,1-命中,NULL-未开奖)
          */
         private Integer isHit;
+
+
+        /**
+         * 比赛开奖结果(根据option_type存储对应玩法的结果)
+         */
+        private String matchResult;
+
+        /**
+         * 开奖结果描述
+         */
+        private String matchResultDesc;
+
+        /**
+         * 开奖赔率
+         */
+        private BigDecimal resultOdds;
+
+        /**
+         * 开奖校验时间
+         */
+        private LocalDateTime checkTime;
     }
 }

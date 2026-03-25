@@ -7,6 +7,7 @@ import cn.xingxing.dto.url5.Match;
 import cn.xingxing.dto.url5.MatchInfo5;
 import cn.xingxing.entity.*;
 import cn.xingxing.mapper.*;
+import cn.xingxing.dto.MatchResultDetailResponse;
 import cn.xingxing.common.util.HttpClientUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -17,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -53,6 +55,12 @@ public class DataServiceImpl implements DataService {
 
     @Autowired
     private MatchCalculatorMapper matchCalculatorMapper;
+
+    @Autowired
+    private MatchResultDetailMapper matchResultDetailMapper;
+
+    @Autowired
+    private BetSchemeOptionMapper betSchemeOptionMapper;
 
 
     @Override
@@ -172,27 +180,155 @@ public class DataServiceImpl implements DataService {
 
     @Override
     public int syncMatchResult() {
+        // 1. 查询需要更新结果的AI分析记录(近5天到明天)
         LambdaQueryWrapper<AiAnalysisResult> queryWrapper = new LambdaQueryWrapper<>();
         LocalDate localDate = LocalDate.now();
         queryWrapper.between(AiAnalysisResult::getMatchTime, localDate.minusDays(5), localDate.plusDays(1));
         List<AiAnalysisResult> aiAnalysisResults = aiAnalysisResultMapper.selectList(queryWrapper);
-        List<SubMatchInfo> matchResult = getMatchResult();
-        if (!CollectionUtils.isEmpty(matchResult)) {
-            Map<Integer, String> collect = matchResult.stream().collect(Collectors.toMap(SubMatchInfo::getMatchId, SubMatchInfo::getSectionsNo999));
-            aiAnalysisResults.forEach(result -> {
-                if (collect.containsKey(Integer.valueOf(result.getMatchId()))) {
-                    result.setMatchResult(collect.get(Integer.valueOf(result.getMatchId())));
+
+        if (CollectionUtils.isEmpty(aiAnalysisResults)) {
+            log.info("没有需要更新结果的AI分析记录");
+            return 0;
+        }
+
+        // 2. 遍历每个比赛，调用matchResultDetailUrl获取详细结果
+        List<Integer> completedMatchIds = new ArrayList<>();
+
+        for (AiAnalysisResult analysisResult : aiAnalysisResults) {
+            try {
+                Integer matchId = Integer.valueOf(analysisResult.getMatchId());
+
+                // 调用详情接口获取比赛结果
+                MatchResultDetail matchResultDetail = getMatchResultDetail(matchId);
+
+                if (matchResultDetail != null) {
+                    // 3. 保存完整的比赛结果到match_result_detail表
+                    saveOrUpdateMatchResultDetail(matchResultDetail);
+
+                    // 4. 只更新ai_analysis_result表的比分字段
+                    analysisResult.setMatchResult(matchResultDetail.getSectionsNo999());
+                    aiAnalysisResultMapper.updateById(analysisResult);
+
+                    // 5. 更新投注方案选项的中奖状态
+                    updateBetSchemeOptions(matchResultDetail);
+
+                    completedMatchIds.add(matchId);
+
+                    log.info("更新比赛结果成功: matchId={}, score={}", matchId, matchResultDetail.getSectionsNo999());
                 }
-            });
-            aiAnalysisResultMapper.updateById(aiAnalysisResults);
-            List<Integer> list = matchResult.stream().map(SubMatchInfo::getMatchId).toList();
+            } catch (Exception e) {
+                log.error("更新比赛结果失败: matchId={}, error={}", analysisResult.getMatchId(), e.getMessage(), e);
+            }
+        }
+
+        // 6. 批量更新match_info表的状态为已完成
+        if (!CollectionUtils.isEmpty(completedMatchIds)) {
             LambdaUpdateWrapper<SubMatchInfo> updateWrapper = new LambdaUpdateWrapper<>();
-            updateWrapper.in(SubMatchInfo::getMatchId, list);
+            updateWrapper.in(SubMatchInfo::getMatchId, completedMatchIds);
             updateWrapper.set(SubMatchInfo::getMatchStatus, "3");
             updateWrapper.set(SubMatchInfo::getMatchStatusName, "已完成");
             matchInfoMapper.update(updateWrapper);
+            log.info("批量更新比赛状态完成,共{}场比赛", completedMatchIds.size());
         }
-        return 0;
+
+        return completedMatchIds.size();
+    }
+
+    /**
+     * 获取比赛结果详情
+     * @param matchId 比赛ID
+     * @return 比赛结果详情
+     */
+    private MatchResultDetail getMatchResultDetail(Integer matchId) {
+        try {
+            String url = String.format(apiConfig.getMatchResultDetailUrl(), matchId);
+            String response = HttpClientUtil.doGet(url, apiConfig.getHttpConnectTimeout());
+
+            MatchResultDetailResponse matchResultDetailResponse = JSONObject.parseObject(response, MatchResultDetailResponse.class);
+
+            if (matchResultDetailResponse != null && matchResultDetailResponse.getSuccess()) {
+                MatchResultDetailResponse.MatchResultDetailValue value = matchResultDetailResponse.getValue();
+
+                if (value != null) {
+                    return buildMatchResultDetail(value);
+                }
+            }
+        } catch (Exception e) {
+            log.error("获取比赛结果详情失败: matchId={}", matchId, e);
+        }
+
+        return null;
+    }
+
+    /**
+     * 构建比赛结果详情实体
+     */
+    private MatchResultDetail buildMatchResultDetail(MatchResultDetailResponse.MatchResultDetailValue value) {
+        MatchResultDetail detail = MatchResultDetail.builder()
+                .matchId(value.getMatchId())
+                .matchStatus(value.getMatchStatus())
+                .matchStatusName(value.getMatchStatusName())
+                .matchMinute(value.getMatchMinute())
+                .matchMinuteExtra(value.getMatchMinuteExtra())
+                .matchPhaseTc(value.getMatchPhaseTc())
+                .matchPhaseTcName(value.getMatchPhaseTcName())
+                .sectionsNo1(value.getSectionsNo1())
+                .sectionsNo999(value.getSectionsNo999())
+                .sectionsExtra(value.getSectionsExtra())
+                .sectionsPenalty(value.getSectionsPenalty())
+                .build();
+
+        // 解析各玩法开奖结果
+        if (!CollectionUtils.isEmpty(value.getMatchResultList())) {
+            for (MatchResultDetailResponse.MatchResultItem item : value.getMatchResultList()) {
+                String poolCode = item.getPoolCode();
+
+                switch (poolCode) {
+                    case "HAD":
+                        detail.setHadResult(item.getCombination());
+                        detail.setHadCombinationDesc(item.getCombinationDesc());
+                        detail.setHadOdds(new java.math.BigDecimal(item.getOdds()));
+                        break;
+                    case "HHAD":
+                        detail.setHhadResult(item.getCombination());
+                        detail.setHhadCombinationDesc(item.getCombinationDesc());
+                        detail.setHhadOdds(new java.math.BigDecimal(item.getOdds()));
+                        break;
+                    case "TTG":
+                        detail.setTtgResult(item.getCombination());
+                        detail.setTtgCombinationDesc(item.getCombinationDesc());
+                        detail.setTtgOdds(new java.math.BigDecimal(item.getOdds()));
+                        break;
+                    case "HAFU":
+                        detail.setHafuResult(item.getCombination());
+                        detail.setHafuCombinationDesc(item.getCombinationDesc());
+                        detail.setHafuOdds(new java.math.BigDecimal(item.getOdds()));
+                        break;
+                    case "CRS":
+                        detail.setCrsResult(item.getCombination());
+                        detail.setCrsCombinationDesc(item.getCombinationDesc());
+                        detail.setCrsOdds(new java.math.BigDecimal(item.getOdds()));
+                        break;
+                    default:
+                        log.warn("未知的玩法类型: {}", poolCode);
+                }
+            }
+        }
+
+        return detail;
+    }
+
+    /**
+     * 保存或更新比赛结果详情
+     */
+    private void saveOrUpdateMatchResultDetail(MatchResultDetail detail) {
+        MatchResultDetail existing = matchResultDetailMapper.selectById(detail.getMatchId());
+
+        if (existing == null) {
+            matchResultDetailMapper.insert(detail);
+        } else {
+            matchResultDetailMapper.updateById(detail);
+        }
     }
 
     @Override
@@ -561,5 +697,106 @@ public class DataServiceImpl implements DataService {
         LambdaQueryWrapper<SubMatchInfo> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(SubMatchInfo::getMatchStatus, "2");
         return queryWrapper;
+    }
+
+    /**
+     * 更新投注方案选项的中奖状态
+     * @param matchResultDetail 比赛结果详情
+     */
+    private void updateBetSchemeOptions(MatchResultDetail matchResultDetail) {
+        try {
+            Integer matchId = matchResultDetail.getMatchId();
+
+            // 查询该比赛相关的所有投注选项
+            LambdaQueryWrapper<BetSchemeOption> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(BetSchemeOption::getMatchId, matchId);
+            List<BetSchemeOption> betSchemeOptions = betSchemeOptionMapper.selectList(queryWrapper);
+
+            if (CollectionUtils.isEmpty(betSchemeOptions)) {
+                log.debug("比赛 {} 没有相关投注选项", matchId);
+                return;
+            }
+
+            // 遍历每个投注选项，判断是否中奖
+            int hitCount = 0;
+            int missCount = 0;
+            java.time.LocalDateTime checkTime = java.time.LocalDateTime.now();
+
+            for (BetSchemeOption option : betSchemeOptions) {
+                String optionType = option.getOptionType().toLowerCase();
+                String optionValue = option.getOptionValue();
+                boolean isHit;
+                String matchResult;
+                String matchResultDesc;
+                BigDecimal resultOdds;
+
+                // 根据不同的玩法类型判断是否命中
+                switch (optionType) {
+                    case "had": // 胜平负
+                        matchResult = matchResultDetail.getHadResult();
+                        matchResultDesc = matchResultDetail.getHadCombinationDesc();
+                        resultOdds = matchResultDetail.getHadOdds();
+                        isHit = optionValue.equalsIgnoreCase(matchResult);
+                        break;
+
+                    case "hhad": // 让球胜平负
+                        matchResult = matchResultDetail.getHhadResult();
+                        matchResultDesc = matchResultDetail.getHhadCombinationDesc();
+                        resultOdds = matchResultDetail.getHhadOdds();
+                        isHit = optionValue.equalsIgnoreCase(matchResult);
+                        break;
+
+                    case "ttg": // 总进球
+                        matchResult = matchResultDetail.getTtgResult();
+                        matchResultDesc = matchResultDetail.getTtgCombinationDesc();
+                        resultOdds = matchResultDetail.getTtgOdds();
+                        isHit = optionValue.equals(matchResult);
+                        break;
+
+                    case "hafu": // 半全场
+                        matchResult = matchResultDetail.getHafuResult();
+                        matchResultDesc = matchResultDetail.getHafuCombinationDesc();
+                        resultOdds = matchResultDetail.getHafuOdds();
+                        // 半全场格式如 "H:H", "D:A" 等
+                        isHit = optionValue.equalsIgnoreCase(matchResult.replace(":",""));
+                        break;
+
+                    case "crs": // 比分
+                        matchResult = matchResultDetail.getCrsResult();
+                        matchResultDesc = matchResultDetail.getCrsCombinationDesc();
+                        resultOdds = matchResultDetail.getCrsOdds();
+                        isHit = optionValue.equals(matchResult);
+                        break;
+
+                    default:
+                        log.warn("未知的玩法类型: optionType={}, matchId={}", optionType, matchId);
+                        continue;
+                }
+
+                // 更新投注选项
+                option.setIsHit(isHit ? 1 : 0);
+                option.setMatchResult(matchResult);
+                option.setMatchResultDesc(matchResultDesc);
+                option.setResultOdds(resultOdds);
+                option.setCheckTime(checkTime);
+
+                betSchemeOptionMapper.updateById(option);
+
+                if (isHit) {
+                    hitCount++;
+                } else {
+                    missCount++;
+                }
+
+                log.debug("更新投注选项: matchId={}, optionType={}, optionValue={}, isHit={}, matchResult={}",
+                        matchId, optionType, optionValue, isHit, matchResult);
+            }
+
+            log.info("更新投注选项完成: matchId={}, 总数={}, 命中={}, 未命中={}",
+                    matchId, betSchemeOptions.size(), hitCount, missCount);
+
+        } catch (Exception e) {
+            log.error("更新投注选项失败: matchId={}, error={}", matchResultDetail.getMatchId(), e.getMessage(), e);
+        }
     }
 }
