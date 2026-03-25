@@ -3,6 +3,7 @@ package cn.xingxing.web;
 
 import cn.xingxing.dto.ApiResponse;
 import cn.xingxing.dto.sms.UserLoginDto;
+import cn.xingxing.dto.sms.UserUpdateDto;
 import cn.xingxing.dto.user.LoginUserResponse;
 import cn.xingxing.dto.user.UserInfoDto;
 import cn.xingxing.dto.user.UserPointDto;
@@ -34,6 +35,12 @@ public class UserController {
     @PostMapping("/user/info")
     public ApiResponse<UserInfoDto> getUserInfo(@RequestBody UserPointDto userPointDto) {
         return ApiResponse.success(userService.getUserInfo(userPointDto));
+    }
+
+
+    @PostMapping("/user/info/update")
+    public ApiResponse<Boolean> updateUserInfo(@RequestBody UserUpdateDto userUpdateDto) {
+        return ApiResponse.success(userService.updateUserInfo(userUpdateDto));
     }
 
 

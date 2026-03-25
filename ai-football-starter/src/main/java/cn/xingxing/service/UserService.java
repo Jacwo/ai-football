@@ -1,5 +1,6 @@
 package cn.xingxing.service;
 
+import cn.xingxing.dto.sms.UserUpdateDto;
 import cn.xingxing.dto.user.LoginUserResponse;
 import cn.xingxing.dto.user.UserInfoDto;
 import cn.xingxing.dto.user.UserPointDto;
@@ -19,4 +20,6 @@ public interface UserService {
     Boolean userSign(String userId);
 
     LoginUserResponse wxLogin(String code);
+
+    Boolean updateUserInfo(UserUpdateDto userUpdateDto);
 }

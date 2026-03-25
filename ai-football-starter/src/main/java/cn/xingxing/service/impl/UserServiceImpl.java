@@ -1,6 +1,7 @@
 package cn.xingxing.service.impl;
 
 
+import cn.xingxing.dto.sms.UserUpdateDto;
 import cn.xingxing.dto.user.UserMatchDto;
 import cn.xingxing.dto.user.UserPointDto;
 import cn.xingxing.entity.User;
@@ -185,7 +186,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (user == null) {
             user = new User();
             user.setOpenId(openId);
-            user.setPhone(RandomUtil.generateUserName());
             user.setUserName("微信用户" + RandomUtil.generateUserName());
             user.setStatus("1");
             user.setPoint(2L);  // 新用户赠送2积分
@@ -217,5 +217,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         loginUserResponse.setUserInfo(userInfo);
 
         return loginUserResponse;
+    }
+
+    @Override
+    public Boolean updateUserInfo(UserUpdateDto userUpdateDto) {
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(User::getId, userUpdateDto.getUserId());
+        User one = this.getOne(queryWrapper);
+        if(one == null){
+            throw new CommonException(10004, "用户不存在");
+        }
+        one.setPhone(userUpdateDto.getPhone());
+        this.updateById(one);
+        return true;
     }
 }
