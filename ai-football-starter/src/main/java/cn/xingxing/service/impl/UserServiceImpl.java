@@ -237,6 +237,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             one.setSignDateTime(phoneUser.getSignDateTime());
             this.removeById(phoneUser);
         }
+        one.setPoint(one.getPoint()+5);
         one.setPhone(userUpdateDto.getPhone());
         this.updateById(one);
         return true;
