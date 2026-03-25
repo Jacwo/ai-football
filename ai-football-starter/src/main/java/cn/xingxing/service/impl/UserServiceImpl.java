@@ -221,11 +221,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public Boolean updateUserInfo(UserUpdateDto userUpdateDto) {
+        LambdaQueryWrapper<User> phoneQuery = new LambdaQueryWrapper<>();
+        phoneQuery.eq(User::getPhone, userUpdateDto.getPhone());
+        User phoneUser = this.getOne(phoneQuery);
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(User::getId, userUpdateDto.getUserId());
         User one = this.getOne(queryWrapper);
         if(one == null){
             throw new CommonException(10004, "用户不存在");
+        }
+        if(phoneUser!=null){
+            one.setPoint(phoneUser.getPoint()+one.getPoint());
+            one.setIsAdmin(phoneUser.getIsAdmin());
+            one.setStatus(phoneUser.getStatus());
+            one.setSignDateTime(phoneUser.getSignDateTime());
+            this.removeById(phoneUser);
         }
         one.setPhone(userUpdateDto.getPhone());
         this.updateById(one);
