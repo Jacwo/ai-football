@@ -62,6 +62,12 @@ public class DataServiceImpl implements DataService {
     @Autowired
     private BetSchemeOptionMapper betSchemeOptionMapper;
 
+    @Autowired
+    private BetSchemeMapper betSchemeMapper;
+
+    @Autowired
+    private BetSchemeDetailMapper betSchemeDetailMapper;
+
 
     @Override
     public int syncMatchInfoData() {
@@ -700,7 +706,7 @@ public class DataServiceImpl implements DataService {
     }
 
     /**
-     * 更新投注方案选项的中奖状态
+     * 更新投注方案选项的中奖状态，并判断方案整体是否中奖
      * @param matchResultDetail 比赛结果详情
      */
     private void updateBetSchemeOptions(MatchResultDetail matchResultDetail) {
@@ -722,13 +728,16 @@ public class DataServiceImpl implements DataService {
             int missCount = 0;
             java.time.LocalDateTime checkTime = java.time.LocalDateTime.now();
 
+            // 收集需要更新状态的方案ID
+            Set<Long> affectedSchemeIds = new HashSet<>();
+
             for (BetSchemeOption option : betSchemeOptions) {
                 String optionType = option.getOptionType().toLowerCase();
                 String optionValue = option.getOptionValue();
-                boolean isHit;
-                String matchResult;
-                String matchResultDesc;
-                BigDecimal resultOdds;
+                boolean isHit = false;
+                String matchResult = null;
+                String matchResultDesc = null;
+                BigDecimal resultOdds = null;
 
                 // 根据不同的玩法类型判断是否命中
                 switch (optionType) {
@@ -736,36 +745,46 @@ public class DataServiceImpl implements DataService {
                         matchResult = matchResultDetail.getHadResult();
                         matchResultDesc = matchResultDetail.getHadCombinationDesc();
                         resultOdds = matchResultDetail.getHadOdds();
-                        isHit = optionValue.equalsIgnoreCase(matchResult);
+                        if (matchResult != null) {
+                            isHit = optionValue.equalsIgnoreCase(matchResult);
+                        }
                         break;
 
                     case "hhad": // 让球胜平负
                         matchResult = matchResultDetail.getHhadResult();
                         matchResultDesc = matchResultDetail.getHhadCombinationDesc();
                         resultOdds = matchResultDetail.getHhadOdds();
-                        isHit = optionValue.equalsIgnoreCase(matchResult);
+                        if (matchResult != null) {
+                            isHit = optionValue.equalsIgnoreCase(matchResult);
+                        }
                         break;
 
                     case "ttg": // 总进球
                         matchResult = matchResultDetail.getTtgResult();
                         matchResultDesc = matchResultDetail.getTtgCombinationDesc();
                         resultOdds = matchResultDetail.getTtgOdds();
-                        isHit = optionValue.equals(matchResult);
+                        if (matchResult != null) {
+                            isHit = optionValue.equals(matchResult);
+                        }
                         break;
 
                     case "hafu": // 半全场
                         matchResult = matchResultDetail.getHafuResult();
                         matchResultDesc = matchResultDetail.getHafuCombinationDesc();
                         resultOdds = matchResultDetail.getHafuOdds();
-                        // 半全场格式如 "H:H", "D:A" 等
-                        isHit = optionValue.equalsIgnoreCase(matchResult.replace(":",""));
+                        if (matchResult != null) {
+                            // 半全场格式如 "H:H", "D:A" 等，去除冒号比较
+                            isHit = optionValue.equalsIgnoreCase(matchResult.replace(":", ""));
+                        }
                         break;
 
                     case "crs": // 比分
                         matchResult = matchResultDetail.getCrsResult();
                         matchResultDesc = matchResultDetail.getCrsCombinationDesc();
                         resultOdds = matchResultDetail.getCrsOdds();
-                        isHit = optionValue.equals(matchResult);
+                        if (matchResult != null) {
+                            isHit = optionValue.equals(matchResult);
+                        }
                         break;
 
                     default:
@@ -782,21 +801,180 @@ public class DataServiceImpl implements DataService {
 
                 betSchemeOptionMapper.updateById(option);
 
+                // 收集受影响的方案ID
+                affectedSchemeIds.add(option.getSchemeId());
+
                 if (isHit) {
                     hitCount++;
                 } else {
                     missCount++;
                 }
 
-                log.debug("更新投注选项: matchId={}, optionType={}, optionValue={}, isHit={}, matchResult={}",
-                        matchId, optionType, optionValue, isHit, matchResult);
+                log.debug("更新投注选项: matchId={}, schemeId={}, optionType={}, optionValue={}, isHit={}, matchResult={}",
+                        matchId, option.getSchemeId(), optionType, optionValue, isHit, matchResult);
             }
 
             log.info("更新投注选项完成: matchId={}, 总数={}, 命中={}, 未命中={}",
                     matchId, betSchemeOptions.size(), hitCount, missCount);
 
+            // 遍历所有受影响的方案，判断方案整体是否中奖
+            for (Long schemeId : affectedSchemeIds) {
+                checkAndUpdateSchemeStatus(schemeId);
+            }
+
         } catch (Exception e) {
             log.error("更新投注选项失败: matchId={}, error={}", matchResultDetail.getMatchId(), e.getMessage(), e);
         }
+    }
+
+    /**
+     * 检查并更新方案的中奖状态
+     * @param schemeId 方案ID
+     */
+    private void checkAndUpdateSchemeStatus(Long schemeId) {
+        try {
+            // 1. 查询方案信息
+            BetScheme betScheme = betSchemeMapper.selectById(schemeId);
+            if (betScheme == null) {
+                log.warn("方案不存在: schemeId={}", schemeId);
+                return;
+            }
+
+            // 2. 查询方案的所有比赛明细
+            LambdaQueryWrapper<BetSchemeDetail> detailWrapper = new LambdaQueryWrapper<>();
+            detailWrapper.eq(BetSchemeDetail::getSchemeId, schemeId);
+            List<BetSchemeDetail> details = betSchemeDetailMapper.selectList(detailWrapper);
+
+            if (CollectionUtils.isEmpty(details)) {
+                log.warn("方案没有明细: schemeId={}", schemeId);
+                return;
+            }
+
+            // 3. 查询方案的所有投注选项
+            LambdaQueryWrapper<BetSchemeOption> optionWrapper = new LambdaQueryWrapper<>();
+            optionWrapper.eq(BetSchemeOption::getSchemeId, schemeId);
+            List<BetSchemeOption> allOptions = betSchemeOptionMapper.selectList(optionWrapper);
+
+            // 4. 按照比赛分组统计每场比赛的命中情况
+            Map<Long, List<BetSchemeOption>> matchOptionsMap = allOptions.stream()
+                    .collect(Collectors.groupingBy(BetSchemeOption::getMatchId));
+
+            // 统计每场比赛的命中状态
+            int totalMatches = matchOptionsMap.size();
+            int hitMatches = 0;      // 命中的比赛数
+            int missMatches = 0;     // 未命中的比赛数
+            int pendingMatches = 0;  // 未开奖的比赛数
+
+            for (Map.Entry<Long, List<BetSchemeOption>> entry : matchOptionsMap.entrySet()) {
+                List<BetSchemeOption> matchOptions = entry.getValue();
+
+                // 判断该场比赛是否有选项命中
+                boolean hasHit = matchOptions.stream().anyMatch(opt -> opt.getIsHit() != null && opt.getIsHit() == 1);
+                boolean hasUnchecked = matchOptions.stream().anyMatch(opt -> opt.getIsHit() == null);
+
+                if (hasUnchecked) {
+                    pendingMatches++;
+                } else if (hasHit) {
+                    hitMatches++;
+                } else {
+                    missMatches++;
+                }
+            }
+
+            log.debug("方案统计: schemeId={}, 总场次={}, 命中={}, 未中={}, 待开奖={}",
+                    schemeId, totalMatches, hitMatches, missMatches, pendingMatches);
+
+            // 5. 如果还有比赛未开奖，保持待开奖状态
+            if (pendingMatches > 0) {
+                log.debug("方案还有{}场比赛未开奖，保持待开奖状态: schemeId={}", pendingMatches, schemeId);
+                return;
+            }
+
+            // 6. 所有比赛都已开奖，根据过关方式判断是否中奖
+            String passTypes = betScheme.getPassTypes();
+            boolean isWin = checkPassTypeWin(passTypes, totalMatches, hitMatches);
+
+            // 7. 更新方案状态
+            Integer newStatus = isWin ? 1 : 2; // 1-已中奖, 2-未中奖
+            if (!newStatus.equals(betScheme.getStatus())) {
+                betScheme.setStatus(newStatus);
+                betScheme.setUpdateTime(java.time.LocalDateTime.now());
+                betSchemeMapper.updateById(betScheme);
+
+                log.info("更新方案状态: schemeId={}, schemeNo={}, passTypes={}, status={}, totalMatches={}, hitMatches={}",
+                        schemeId, betScheme.getSchemeNo(), passTypes, newStatus == 1 ? "已中奖" : "未中奖",
+                        totalMatches, hitMatches);
+            }
+
+        } catch (Exception e) {
+            log.error("检查方案状态失败: schemeId={}, error={}", schemeId, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 根据过关方式判断是否中奖
+     * @param passTypes 过关方式，多个用逗号分隔(如: single, 2_1, 3_1)
+     * @param totalMatches 总场次
+     * @param hitMatches 命中场次
+     * @return true-中奖, false-未中奖
+     */
+    private boolean checkPassTypeWin(String passTypes, int totalMatches, int hitMatches) {
+        if (passTypes == null || passTypes.isEmpty()) {
+            return false;
+        }
+
+        // 分割多个过关方式
+        String[] passTypeArray = passTypes.split(",");
+
+        // 只要有一种过关方式满足条件就算中奖
+        for (String passType : passTypeArray) {
+            passType = passType.trim().toLowerCase();
+
+            if (passType.equals("single") || passType.equals("1x1") || passType.equals("1_1")) {
+                // 单关：只投注1场，命中即中奖
+                if (totalMatches == 1 && hitMatches == 1) {
+                    log.debug("单关中奖: passType={}", passType);
+                    return true;
+                }
+            } else if (passType.contains("_") || passType.contains("x")) {
+                // 串关：格式如 "2_1"(2串1) 或 "2x1"
+                String[] parts = passType.split("[_x]");
+                if (parts.length == 2) {
+                    try {
+                        int m = Integer.parseInt(parts[0]); // 选择的场次
+                        int n = Integer.parseInt(parts[1]); // 串关数
+
+                        // m串n的规则：
+                        // 2串1: 2场都要中
+                        // 3串1: 3场都要中
+                        // 3串3: 至少2场要中(3选2组合)
+                        // 3串4: 至少2场要中(3选2组合 + 3串1)
+                        // 4串11: 至少2场要中(4选2组合 + 4选3组合 + 4串1)
+
+                        if (n == 1) {
+                            // m串1：m场全部命中才中奖
+                            if (totalMatches >= m && hitMatches >= m) {
+                                log.debug("{}串1中奖: totalMatches={}, hitMatches={}", m, totalMatches, hitMatches);
+                                return true;
+                            }
+                        } else {
+                            // m串n(n>1)：至少命中 m-1 场就有奖（容错1场）
+                            // 简化规则：命中数 >= m-1 就算中奖
+                            int minHitRequired = Math.max(2, m - 1);
+                            if (totalMatches >= m && hitMatches >= minHitRequired) {
+                                log.debug("{}串{}中奖: totalMatches={}, hitMatches={}, minRequired={}",
+                                        m, n, totalMatches, hitMatches, minHitRequired);
+                                return true;
+                            }
+                        }
+                    } catch (NumberFormatException e) {
+                        log.warn("解析过关方式失败: passType={}", passType);
+                    }
+                }
+            }
+        }
+
+        log.debug("未中奖: passTypes={}, totalMatches={}, hitMatches={}", passTypes, totalMatches, hitMatches);
+        return false;
     }
 }
