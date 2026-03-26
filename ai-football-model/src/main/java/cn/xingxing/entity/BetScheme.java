@@ -57,6 +57,12 @@ public class BetScheme extends BaseEntity {
      */
     private Integer totalBets;
 
+
+    /**
+     * 是否推荐
+     */
+    private Integer recommend;
+
     /**
      * 总金额(元)
      */

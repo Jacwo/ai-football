@@ -48,9 +48,22 @@ public class BetSchemeController {
         return ApiResponse.success(schemes);
     }
 
+
+    @PostMapping("/list")
+    public ApiResponse<List<BetSchemeVo>> listSchemes() {
+        List<BetSchemeVo> schemes = betSchemeService.listSchemes();
+        return ApiResponse.success(schemes);
+    }
+
     @PostMapping("/delete/{id}")
     public ApiResponse<Boolean> deleteScheme(@PathVariable String id) {
         log.info("查询删除方案列表, id: {}", id);
         return ApiResponse.success(betSchemeService.deleteScheme(id));
+    }
+
+    @PostMapping("/recommend/{id}")
+    public ApiResponse<Boolean> recommendScheme(@PathVariable String id) {
+        log.info("推荐方案, id: {}", id);
+        return ApiResponse.success(betSchemeService.recommendScheme(id));
     }
 }

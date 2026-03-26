@@ -28,4 +28,8 @@ public interface BetSchemeService {
     List<BetSchemeVo> getUserSchemes(String userId);
 
     Boolean deleteScheme(String id);
+
+    Boolean recommendScheme(String id);
+
+    List<BetSchemeVo> listSchemes();
 }
