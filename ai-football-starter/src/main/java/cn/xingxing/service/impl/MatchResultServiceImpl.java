@@ -30,7 +30,7 @@ public class MatchResultServiceImpl  extends ServiceImpl<MatchResultDetailMapper
     @Override
     public List<MatchResultDetailDto> listMatchResult() {
         // 计算三天前的时间
-        LocalDateTime threeDaysAgo = LocalDateTime.now().minusDays(3);
+        LocalDateTime threeDaysAgo = LocalDateTime.now().minusDays(2);
 
         // 查询最近三天的比赛结果
         LambdaQueryWrapper<MatchResultDetail> queryWrapper = new LambdaQueryWrapper<>();

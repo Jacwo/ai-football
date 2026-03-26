@@ -1,5 +1,6 @@
 package cn.xingxing.service.impl;
 
+import cn.xingxing.common.exception.CommonException;
 import cn.xingxing.dto.BetSchemeSaveDto;
 import cn.xingxing.dto.BetSchemeVo;
 import cn.xingxing.entity.BetScheme;
@@ -148,7 +149,11 @@ public class BetSchemeServiceImpl extends ServiceImpl<BetSchemeMapper, BetScheme
     public Boolean recommendScheme(String id) {
         Long schemeId = Long.parseLong(id);
         BetScheme byId = this.getById(schemeId);
+
         if(byId!=null){
+            if(byId.getRecommend()==1){
+                throw new CommonException(10007,"不能重复推荐");
+            }
             byId.setRecommend(1);
             this.updateById(byId);
         }
