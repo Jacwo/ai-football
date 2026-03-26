@@ -8,11 +8,9 @@ import cn.xingxing.entity.User;
 import cn.xingxing.dto.user.LoginUserResponse;
 import cn.xingxing.dto.user.UserInfoDto;
 import cn.xingxing.common.exception.CommonException;
+import cn.xingxing.entity.UserInformation;
 import cn.xingxing.mapper.UserMapper;
-import cn.xingxing.service.SmsService;
-import cn.xingxing.service.UserMatchService;
-import cn.xingxing.service.UserService;
-import cn.xingxing.service.WeChatService;
+import cn.xingxing.service.*;
 import cn.xingxing.common.util.AuthTokenUtil;
 import cn.xingxing.common.util.RandomUtil;
 import com.alibaba.fastjson.JSONObject;
@@ -37,6 +35,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private SmsService smsService;
     @Autowired
     private UserMatchService userMatchService;
+
+    @Autowired
+    private UserInformationService userInformationService;
     @Autowired
     private WeChatService weChatService;
     @Override
@@ -242,6 +243,23 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         one.setPoint(one.getPoint()+5);
         one.setPhone(userUpdateDto.getPhone());
         this.updateById(one);
+        return true;
+    }
+
+    @Override
+    public Boolean deductPointForInformation(UserPointDto userPointDto) {
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(User::getId, userPointDto.getId());
+        User one = this.getOne(queryWrapper);
+        if(one.getPoint()<userPointDto.getDeductPoint()){
+            throw new CommonException(10003,"积分余额不足");
+        }
+        one.setPoint(one.getPoint()- userPointDto.getDeductPoint());
+        this.updateById(one);
+        UserInformation  userInformation =new UserInformation();
+        userInformation.setUserId(userPointDto.getId());
+        userInformation.setMatchId(userPointDto.getMatchId());
+        userInformationService.saveUserInformation(userInformation);
         return true;
     }
 }

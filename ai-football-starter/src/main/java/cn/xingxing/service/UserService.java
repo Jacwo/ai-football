@@ -22,4 +22,6 @@ public interface UserService {
     LoginUserResponse wxLogin(String code);
 
     Boolean updateUserInfo(UserUpdateDto userUpdateDto);
+
+    Boolean deductPointForInformation(UserPointDto userPointDto);
 }

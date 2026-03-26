@@ -32,6 +32,12 @@ public class UserController {
         return ApiResponse.success(userService.deductPoint(userPointDto));
     }
 
+
+    @PostMapping("/user/point/information/deduct")
+    public ApiResponse<Boolean> deductPointForInformation(@RequestBody UserPointDto userPointDto) {
+        return ApiResponse.success(userService.deductPointForInformation(userPointDto));
+    }
+
     @PostMapping("/user/info")
     public ApiResponse<UserInfoDto> getUserInfo(@RequestBody UserPointDto userPointDto) {
         return ApiResponse.success(userService.getUserInfo(userPointDto));

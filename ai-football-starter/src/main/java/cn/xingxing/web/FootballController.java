@@ -6,6 +6,7 @@ import cn.xingxing.data.TeamStatsService;
 import cn.xingxing.dto.*;
 import cn.xingxing.dto.user.BatchCheckDto;
 import cn.xingxing.dto.user.BatchCheckResponseDto;
+import cn.xingxing.dto.user.UserInformationDto;
 import cn.xingxing.entity.*;
 import cn.xingxing.service.*;
 import cn.xingxing.vo.MatchInfoVo;
@@ -50,6 +51,9 @@ public class FootballController {
     private HadListService hadListService;
     @Autowired
     private DataService dataService;
+
+    @Autowired
+    private UserInformationService userInformationService;
 
     @PostMapping("/batch/check/unlock")
     public ApiResponse<List<BatchCheckResponseDto>> batchCheckUnlock(@RequestBody BatchCheckDto batchCheckDto) {
@@ -119,6 +123,13 @@ public class FootballController {
 
         }
         return ApiResponse.success(null);
+    }
+
+
+    @PostMapping("/check/Information/unlock")
+    public ApiResponse<Boolean> checkInformationUnlock(@RequestBody UserInformationDto userInformationDto) {
+        Boolean result= userInformationService.checkInformationUnlock(userInformationDto);
+        return ApiResponse.success(result);
     }
 
 
