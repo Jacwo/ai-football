@@ -19,6 +19,10 @@ public class MatchResultDetailDto {
      * 联赛名称
      */
     private String leagueName;
+
+    private String matchDate;
+
+    private String matchTime;
     /**
      * 主队名称
      */

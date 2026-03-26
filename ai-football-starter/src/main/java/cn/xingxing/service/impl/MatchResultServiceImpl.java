@@ -56,6 +56,8 @@ public class MatchResultServiceImpl  extends ServiceImpl<MatchResultDetailMapper
             dto.setHomeName(matchById.getHomeTeamAbbName());
             dto.setAwayName(matchById.getAwayTeamAbbName());
             dto.setLeagueName(matchById.getLeagueAbbName());
+            dto.setMatchDate(matchById.getMatchDate());
+            dto.setMatchTime(matchById.getMatchTime());
         }
         return dto;
     }
