@@ -207,7 +207,7 @@ public class DataServiceImpl implements DataService {
                 // 调用详情接口获取比赛结果
                 MatchResultDetail matchResultDetail = getMatchResultDetail(matchId);
 
-                if (matchResultDetail != null) {
+                if (matchResultDetail != null && matchResultDetail.getCrsResult()!=null) {
                     // 3. 保存完整的比赛结果到match_result_detail表
                     saveOrUpdateMatchResultDetail(matchResultDetail);
 
