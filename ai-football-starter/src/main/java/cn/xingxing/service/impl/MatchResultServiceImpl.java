@@ -34,7 +34,7 @@ public class MatchResultServiceImpl  extends ServiceImpl<MatchResultDetailMapper
 
         // 查询最近三天的比赛结果
         LambdaQueryWrapper<MatchResultDetail> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.ge(MatchResultDetail::getCreateTime, threeDaysAgo)
+        queryWrapper.ge(MatchResultDetail::getCreateTime, threeDaysAgo).isNotNull(MatchResultDetail::getCrsResult)
                     .orderByDesc(MatchResultDetail::getCreateTime);
 
         List<MatchResultDetail> matchResultDetails = this.list(queryWrapper);
