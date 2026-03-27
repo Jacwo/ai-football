@@ -112,7 +112,7 @@ public class BetSchemeServiceImpl extends ServiceImpl<BetSchemeMapper, BetScheme
     public List<BetSchemeVo> getUserSchemes(String userId) {
         // 查询用户的方案列表
         LambdaQueryWrapper<BetScheme> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(BetScheme::getUserId, userId)
+        wrapper.and(item->item.eq(BetScheme::getUserId, userId).or().eq(BetScheme::getId,userId))
                 .orderByDesc(BetScheme::getCreateTime);
         List<BetScheme> betSchemes = betSchemeMapper.selectList(wrapper);
         return processBetSchemes(betSchemes);
