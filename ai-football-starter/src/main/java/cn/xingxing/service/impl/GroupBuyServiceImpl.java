@@ -332,6 +332,7 @@ public class GroupBuyServiceImpl extends ServiceImpl<GroupBuyMapper, GroupBuy> i
                 .statusDesc(statusDesc)
                 .expireTime(groupBuy.getExpireTime().format(DATE_TIME_FORMATTER))
                 .successTime(groupBuy.getSuccessTime() != null ? groupBuy.getSuccessTime().format(DATE_TIME_FORMATTER) : null)
+                .rewardDistributed(groupBuy.getRewardDistributed())
                 .createTime(groupBuy.getCreateTime().format(DATE_TIME_FORMATTER))
                 .members(memberVos)
                 .build();

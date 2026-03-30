@@ -65,6 +65,11 @@ public class GroupBuyVo {
     private String successTime;
 
     /**
+     * 积分是否已发放: 0-未发放, 1-已发放
+     */
+    private Integer rewardDistributed;
+
+    /**
      * 创建时间
      */
     private String createTime;
