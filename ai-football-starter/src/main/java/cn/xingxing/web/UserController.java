@@ -52,6 +52,13 @@ public class UserController {
     }
 
 
+    @PostMapping("/user/info/update/name")
+    public ApiResponse<Boolean> updateUserName(@RequestBody UserUpdateDto userUpdateDto) {
+        return ApiResponse.success(userService.updateUserName(userUpdateDto));
+    }
+
+
+
     @PostMapping("/user/sign/{userId}")
     public ApiResponse<Boolean> userSign(@PathVariable String userId) {
         return ApiResponse.success(userService.userSign(userId));

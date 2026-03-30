@@ -24,4 +24,6 @@ public interface UserService {
     Boolean updateUserInfo(UserUpdateDto userUpdateDto);
 
     Boolean deductPointForInformation(UserPointDto userPointDto);
+
+    Boolean updateUserName(UserUpdateDto userUpdateDto);
 }

@@ -3,14 +3,8 @@ package cn.xingxing.service.impl;
 import cn.xingxing.common.exception.CommonException;
 import cn.xingxing.dto.BetSchemeSaveDto;
 import cn.xingxing.dto.BetSchemeVo;
-import cn.xingxing.entity.BetScheme;
-import cn.xingxing.entity.BetSchemeDetail;
-import cn.xingxing.entity.BetSchemeOption;
-import cn.xingxing.entity.MatchCalculator;
-import cn.xingxing.mapper.BetSchemeDetailMapper;
-import cn.xingxing.mapper.BetSchemeMapper;
-import cn.xingxing.mapper.BetSchemeOptionMapper;
-import cn.xingxing.mapper.MatchCalculatorMapper;
+import cn.xingxing.entity.*;
+import cn.xingxing.mapper.*;
 import cn.xingxing.service.BetSchemeService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -46,6 +40,9 @@ public class BetSchemeServiceImpl extends ServiceImpl<BetSchemeMapper, BetScheme
 
     @Autowired
     private MatchCalculatorMapper matchCalculatorMapper;
+
+    @Autowired
+    private UserMapper userMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -179,9 +176,12 @@ public class BetSchemeServiceImpl extends ServiceImpl<BetSchemeMapper, BetScheme
         // 组装返回数据
         List<BetSchemeVo> result = new ArrayList<>();
         for (BetScheme betScheme : betSchemes) {
+            String userId = betScheme.getUserId();
+            User user = userMapper.selectById(userId);
             BetSchemeVo vo = BetSchemeVo.builder()
                     .id(betScheme.getId())
-                    .userId(betScheme.getUserId())
+                    .userId(userId)
+                    .userName(user!=null? user.getUserName():"")
                     .schemeNo(betScheme.getSchemeNo())
                     .passTypes(Arrays.asList(betScheme.getPassTypes().split(",")))
                     .multiple(betScheme.getMultiple())

@@ -17,6 +17,7 @@ import cn.xingxing.common.util.RandomUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -43,6 +44,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private WeChatService weChatService;
     @Autowired
     private UserPointDetailService userPointDetailService;
+
     @Override
     public LoginUserResponse login(String phone, String code) {
         boolean result = smsService.checkSmsCode(phone, code);
@@ -97,8 +99,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(User::getId, userPointDto.getId());
         User one = this.getOne(queryWrapper);
-        if(one.getPoint()<userPointDto.getDeductPoint()){
-            throw new CommonException(10003,"积分余额不足");
+        if (one.getPoint() < userPointDto.getDeductPoint()) {
+            throw new CommonException(10003, "积分余额不足");
         }
 
         // 记录变化前的积分
@@ -120,7 +122,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 "查看赛事分析扣除积分"
         );
 
-        UserMatchDto userMatchDto =new UserMatchDto();
+        UserMatchDto userMatchDto = new UserMatchDto();
         userMatchDto.setUserId(userPointDto.getId());
         userMatchDto.setMatchId(userPointDto.getMatchId());
         userMatchService.saveUserMatch(userMatchDto);
@@ -132,7 +134,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(User::getId, userPointDto.getId());
         User one = this.getOne(queryWrapper);
-        if(one!=null){
+        if (one != null) {
             UserInfoDto userInfo = new UserInfoDto();
             userInfo.setPhone(one.getPhone());
             userInfo.setId(one.getId());
@@ -154,6 +156,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     /**
      * 判断是否在今天签到（以早上5点为分界点）
+     *
      * @param signDateTime 签到时间
      * @return true表示今天已签到，false表示未签到
      */
@@ -185,12 +188,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(User::getId, userId);
         User one = this.getOne(queryWrapper);
-        if(one == null){
+        if (one == null) {
             throw new CommonException(10004, "用户不存在");
         }
 
         // 检查今天是否已经签到
-        if(checkIfSignedToday(one.getSignDateTime())){
+        if (checkIfSignedToday(one.getSignDateTime())) {
             throw new CommonException(10005, "今日已签到，请勿重复签到");
         }
 
@@ -269,7 +272,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         // 5. 生成 token
         String authToken = AuthTokenUtil.createAuthToken(
-            JSONObject.parseObject(JSONObject.toJSONString(userInfo), Map.class)
+                JSONObject.parseObject(JSONObject.toJSONString(userInfo), Map.class)
         );
 
         // 6. 返回登录响应
@@ -288,19 +291,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(User::getId, userUpdateDto.getUserId());
         User one = this.getOne(queryWrapper);
-        if(one == null){
+        if (one == null) {
             throw new CommonException(10004, "用户不存在");
         }
         Long pointBefore = one.getPoint();
         Long pointAfter = pointBefore;
 
-        if(phoneUser!=null && !phoneUser.getId().equals(userUpdateDto.getUserId())){
+        if (phoneUser != null && !phoneUser.getId().equals(userUpdateDto.getUserId())) {
             pointAfter = phoneUser.getPoint() + one.getPoint();
             one.setPoint(pointAfter);
             one.setIsAdmin(phoneUser.getIsAdmin());
             one.setStatus(phoneUser.getStatus());
             one.setSignDateTime(phoneUser.getSignDateTime());
-            phoneUser.setPhone(phoneUser.getPhone()+"_1");
+            phoneUser.setPhone(phoneUser.getPhone() + "_1");
             this.updateById(phoneUser);
             this.removeById(phoneUser);
         }
@@ -331,8 +334,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(User::getId, userPointDto.getId());
         User one = this.getOne(queryWrapper);
-        if(one.getPoint()<userPointDto.getDeductPoint()){
-            throw new CommonException(10003,"积分余额不足");
+        if (one.getPoint() < userPointDto.getDeductPoint()) {
+            throw new CommonException(10003, "积分余额不足");
         }
 
         // 记录变化前的积分
@@ -354,10 +357,26 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 "查看情报信息扣除积分"
         );
 
-        UserInformation  userInformation =new UserInformation();
+        UserInformation userInformation = new UserInformation();
         userInformation.setUserId(userPointDto.getId());
         userInformation.setMatchId(userPointDto.getMatchId());
         userInformationService.saveUserInformation(userInformation);
+        return true;
+    }
+
+    @Override
+    public Boolean updateUserName(UserUpdateDto userUpdateDto) {
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(User::getId, userUpdateDto.getUserId());
+        User one = this.getOne(queryWrapper);
+        if (one == null) {
+            throw new CommonException(10004, "用户不存在");
+        }
+        if(StringUtils.isEmpty(userUpdateDto.getUserName())){
+            throw new CommonException(10008, "用户名称不能为空");
+        }
+        one.setUserName(userUpdateDto.getUserName());
+        this.updateById(one);
         return true;
     }
 }

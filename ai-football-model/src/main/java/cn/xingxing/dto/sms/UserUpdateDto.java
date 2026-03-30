@@ -12,4 +12,5 @@ import lombok.Data;
 public class UserUpdateDto {
     private String phone;
     private String userId;
+    private String userName;
 }

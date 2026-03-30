@@ -30,6 +30,10 @@ public class BetSchemeVo {
      * 用户ID
      */
     private String userId;
+    /**
+     * 用户名称
+     */
+    private String userName;
 
     /**
      * 方案编号
