@@ -9,6 +9,7 @@ import cn.xingxing.dto.user.LoginUserResponse;
 import cn.xingxing.dto.user.UserInfoDto;
 import cn.xingxing.common.exception.CommonException;
 import cn.xingxing.entity.UserInformation;
+import cn.xingxing.enums.PointChangeType;
 import cn.xingxing.mapper.UserMapper;
 import cn.xingxing.service.*;
 import cn.xingxing.common.util.AuthTokenUtil;
@@ -40,6 +41,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private UserInformationService userInformationService;
     @Autowired
     private WeChatService weChatService;
+    @Autowired
+    private UserPointDetailService userPointDetailService;
     @Override
     public LoginUserResponse login(String phone, String code) {
         boolean result = smsService.checkSmsCode(phone, code);
@@ -54,6 +57,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 user.setStatus("1");
                 user.setPoint(2L);
                 this.save(user);
+
+                // 保存注册赠送积分明细
+                User savedUser = this.getOne(queryWrapper);
+                userPointDetailService.savePointDetail(
+                        savedUser.getId(),
+                        2L,  // 正数表示增加
+                        0L,
+                        2L,
+                        PointChangeType.REGISTER.getCode(),
+                        null,
+                        "新用户注册赠送"
+                );
             }
             User dbUser = this.getOne(queryWrapper);
             smsService.deleteSmsCode(phone, code);
@@ -85,8 +100,26 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if(one.getPoint()<userPointDto.getDeductPoint()){
             throw new CommonException(10003,"积分余额不足");
         }
-        one.setPoint(one.getPoint()- userPointDto.getDeductPoint());
+
+        // 记录变化前的积分
+        Long pointBefore = one.getPoint();
+        Long pointAfter = pointBefore - userPointDto.getDeductPoint();
+
+        // 更新用户积分
+        one.setPoint(pointAfter);
         this.updateById(one);
+
+        // 保存积分明细
+        userPointDetailService.savePointDetail(
+                userPointDto.getId(),
+                -userPointDto.getDeductPoint(),  // 负数表示扣除
+                pointBefore,
+                pointAfter,
+                PointChangeType.DEDUCT_MATCH.getCode(),
+                userPointDto.getMatchId(),
+                "查看赛事分析扣除积分"
+        );
+
         UserMatchDto userMatchDto =new UserMatchDto();
         userMatchDto.setUserId(userPointDto.getId());
         userMatchDto.setMatchId(userPointDto.getMatchId());
@@ -161,10 +194,26 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new CommonException(10005, "今日已签到，请勿重复签到");
         }
 
+        // 记录变化前的积分
+        Long pointBefore = one.getPoint();
+        Long pointAfter = pointBefore + 1;
+
         // 签到并增加积分
         one.setSignDateTime(LocalDateTime.now());
-        one.setPoint(one.getPoint() +1);  // 签到奖励1积分
+        one.setPoint(pointAfter);  // 签到奖励1积分
         this.updateById(one);
+
+        // 保存积分明细
+        userPointDetailService.savePointDetail(
+                userId,
+                1L,  // 正数表示增加
+                pointBefore,
+                pointAfter,
+                PointChangeType.SIGN.getCode(),
+                null,
+                "每日签到奖励"
+        );
+
         return true;
     }
 
@@ -193,6 +242,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             this.save(user);
             // 重新查询获取完整用户信息
             user = this.getOne(queryWrapper);
+
+            // 保存注册赠送积分明细
+            userPointDetailService.savePointDetail(
+                    user.getId(),
+                    2L,  // 正数表示增加
+                    0L,
+                    2L,
+                    PointChangeType.REGISTER.getCode(),
+                    null,
+                    "微信用户注册赠送"
+            );
         }
 
         // 4. 构建用户信息和 token
@@ -231,8 +291,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if(one == null){
             throw new CommonException(10004, "用户不存在");
         }
+        Long pointBefore = one.getPoint();
+        Long pointAfter = pointBefore;
+
         if(phoneUser!=null && !phoneUser.getId().equals(userUpdateDto.getUserId())){
-            one.setPoint(phoneUser.getPoint()+one.getPoint());
+            pointAfter = phoneUser.getPoint() + one.getPoint();
+            one.setPoint(pointAfter);
             one.setIsAdmin(phoneUser.getIsAdmin());
             one.setStatus(phoneUser.getStatus());
             one.setSignDateTime(phoneUser.getSignDateTime());
@@ -240,9 +304,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             this.updateById(phoneUser);
             this.removeById(phoneUser);
         }
-        one.setPoint(one.getPoint()+5);
+
+        // 绑定手机奖励5积分
+        Long finalPointBefore = one.getPoint();
+        pointAfter = finalPointBefore + 5;
+        one.setPoint(pointAfter);
         one.setPhone(userUpdateDto.getPhone());
         this.updateById(one);
+
+        // 保存绑定手机奖励积分明细
+        userPointDetailService.savePointDetail(
+                userUpdateDto.getUserId(),
+                5L,  // 正数表示增加
+                finalPointBefore,
+                pointAfter,
+                PointChangeType.BIND_PHONE.getCode(),
+                null,
+                "绑定手机号奖励"
+        );
+
         return true;
     }
 
@@ -254,8 +334,26 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if(one.getPoint()<userPointDto.getDeductPoint()){
             throw new CommonException(10003,"积分余额不足");
         }
-        one.setPoint(one.getPoint()- userPointDto.getDeductPoint());
+
+        // 记录变化前的积分
+        Long pointBefore = one.getPoint();
+        Long pointAfter = pointBefore - userPointDto.getDeductPoint();
+
+        // 更新用户积分
+        one.setPoint(pointAfter);
         this.updateById(one);
+
+        // 保存积分明细
+        userPointDetailService.savePointDetail(
+                userPointDto.getId(),
+                -userPointDto.getDeductPoint(),  // 负数表示扣除
+                pointBefore,
+                pointAfter,
+                PointChangeType.DEDUCT_INFO.getCode(),
+                userPointDto.getMatchId(),
+                "查看情报信息扣除积分"
+        );
+
         UserInformation  userInformation =new UserInformation();
         userInformation.setUserId(userPointDto.getId());
         userInformation.setMatchId(userPointDto.getMatchId());

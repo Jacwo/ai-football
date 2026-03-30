@@ -4,11 +4,11 @@ package cn.xingxing.web;
 import cn.xingxing.dto.ApiResponse;
 import cn.xingxing.dto.sms.UserLoginDto;
 import cn.xingxing.dto.sms.UserUpdateDto;
-import cn.xingxing.dto.user.LoginUserResponse;
-import cn.xingxing.dto.user.UserInfoDto;
-import cn.xingxing.dto.user.UserPointDto;
-import cn.xingxing.dto.user.WxLoginDto;
+import cn.xingxing.dto.user.*;
+import cn.xingxing.service.UserPointDetailService;
 import cn.xingxing.service.UserService;
+
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,6 +22,8 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
     @Autowired
     private UserService userService;
+    @Autowired
+    private UserPointDetailService userPointDetailService;
     @PostMapping("/user/login")
     public ApiResponse<LoginUserResponse> sendSms(@RequestBody UserLoginDto userLoginDto) {
         return ApiResponse.success(userService.login(userLoginDto.getPhone(), userLoginDto.getCode()));
@@ -61,5 +63,14 @@ public class UserController {
         return ApiResponse.success(userService.wxLogin(wxLoginDto.getCode()));
     }
 
+    /**
+     * 查询用户积分明细列表
+     * @param queryDto 查询条件
+     * @return 积分明细列表
+     */
+    @PostMapping("/user/point/detail/list")
+    public ApiResponse<List<UserPointDetailDto>> getUserPointDetailList(@RequestBody UserPointDetailQueryDto queryDto) {
+        return ApiResponse.success(userPointDetailService.getUserPointDetailList(queryDto));
+    }
 
 }
