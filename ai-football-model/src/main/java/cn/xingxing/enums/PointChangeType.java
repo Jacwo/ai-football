@@ -17,7 +17,9 @@ public enum PointChangeType {
     DEDUCT_INFO("DEDUCT_INFO", "情报扣除"),
     SIGN("SIGN", "签到奖励"),
     REGISTER("REGISTER", "注册赠送"),
-    BIND_PHONE("BIND_PHONE", "绑定手机奖励");
+    BIND_PHONE("BIND_PHONE", "绑定手机奖励"),
+    GROUP_BUY_LEADER("GROUP_BUY_LEADER", "拼团团长奖励"),
+    GROUP_BUY_MEMBER("GROUP_BUY_MEMBER", "拼团团员奖励");
 
     private final String code;
     private final String desc;
