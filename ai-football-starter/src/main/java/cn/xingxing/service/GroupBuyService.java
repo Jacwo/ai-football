@@ -3,6 +3,8 @@ package cn.xingxing.service;
 import cn.xingxing.dto.groupbuy.CreateGroupBuyDto;
 import cn.xingxing.dto.groupbuy.GroupBuyVo;
 import cn.xingxing.dto.groupbuy.JoinGroupBuyDto;
+import cn.xingxing.dto.groupbuy.MyGroupBuyQueryDto;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 /**
  * 拼团服务接口
@@ -32,4 +34,11 @@ public interface GroupBuyService {
      * @return 拼团信息
      */
     GroupBuyVo getGroupBuyDetail(String groupId);
+
+    /**
+     * 查询我的拼团列表（分页）
+     * @param queryDto 查询条件
+     * @return 分页结果
+     */
+    Page<GroupBuyVo> getMyGroupBuyList(MyGroupBuyQueryDto queryDto);
 }

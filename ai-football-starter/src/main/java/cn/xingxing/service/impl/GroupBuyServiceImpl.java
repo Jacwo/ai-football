@@ -1,10 +1,7 @@
 package cn.xingxing.service.impl;
 
 import cn.xingxing.common.exception.CommonException;
-import cn.xingxing.dto.groupbuy.CreateGroupBuyDto;
-import cn.xingxing.dto.groupbuy.GroupBuyMemberVo;
-import cn.xingxing.dto.groupbuy.GroupBuyVo;
-import cn.xingxing.dto.groupbuy.JoinGroupBuyDto;
+import cn.xingxing.dto.groupbuy.*;
 import cn.xingxing.entity.GroupBuy;
 import cn.xingxing.entity.GroupBuyMember;
 import cn.xingxing.entity.User;
@@ -15,6 +12,7 @@ import cn.xingxing.mapper.UserMapper;
 import cn.xingxing.service.GroupBuyService;
 import cn.xingxing.service.UserPointDetailService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -340,5 +338,73 @@ public class GroupBuyServiceImpl extends ServiceImpl<GroupBuyMapper, GroupBuy> i
                 .createTime(groupBuy.getCreateTime().format(DATE_TIME_FORMATTER))
                 .members(memberVos)
                 .build();
+    }
+
+    @Override
+    public Page<GroupBuyVo> getMyGroupBuyList(MyGroupBuyQueryDto queryDto) {
+        String userId = queryDto.getUserId();
+        log.info("查询用户 {} 的拼团列表, 状态: {}, 页码: {}, 每页: {}",
+                userId, queryDto.getStatus(), queryDto.getPageNum(), queryDto.getPageSize());
+
+        // 先查询用户参与的所有拼团ID
+        LambdaQueryWrapper<GroupBuyMember> memberWrapper = new LambdaQueryWrapper<>();
+        memberWrapper.eq(GroupBuyMember::getUserId, userId);
+        List<GroupBuyMember> memberList = groupBuyMemberMapper.selectList(memberWrapper);
+        log.info("-- SQL: SELECT * FROM group_buy_member WHERE user_id = '{}' AND deleted = 0", userId);
+
+        if (memberList.isEmpty()) {
+            log.info("用户 {} 未参与任何拼团", userId);
+            return new Page<>(queryDto.getPageNum(), queryDto.getPageSize());
+        }
+
+        // 提取拼团ID列表
+        List<String> groupIds = memberList.stream()
+                .map(GroupBuyMember::getGroupId)
+                .collect(Collectors.toList());
+
+        // 构建拼团查询条件
+        LambdaQueryWrapper<GroupBuy> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.in(GroupBuy::getId, groupIds);
+
+        // 如果指定了状态，添加状态过滤
+        if (queryDto.getStatus() != null) {
+            queryWrapper.eq(GroupBuy::getStatus, queryDto.getStatus());
+        }
+
+        // 按创建时间倒序
+        queryWrapper.orderByDesc(GroupBuy::getCreateTime);
+
+        // 构建SQL日志
+        StringBuilder sqlLog = new StringBuilder("-- SQL: SELECT * FROM group_buy WHERE id IN (");
+        sqlLog.append(groupIds.stream().map(id -> "'" + id + "'").collect(Collectors.joining(", ")));
+        sqlLog.append(")");
+        if (queryDto.getStatus() != null) {
+            sqlLog.append(" AND status = ").append(queryDto.getStatus());
+        }
+        sqlLog.append(" AND deleted = 0 ORDER BY create_time DESC LIMIT ")
+                .append((queryDto.getPageNum() - 1) * queryDto.getPageSize())
+                .append(", ")
+                .append(queryDto.getPageSize());
+        log.info(sqlLog.toString());
+
+        // 分页查询
+        Page<GroupBuy> page = new Page<>(queryDto.getPageNum(), queryDto.getPageSize());
+        Page<GroupBuy> resultPage = this.page(page, queryWrapper);
+
+        // 转换为VO
+        Page<GroupBuyVo> voPage = new Page<>();
+        voPage.setCurrent(resultPage.getCurrent());
+        voPage.setSize(resultPage.getSize());
+        voPage.setTotal(resultPage.getTotal());
+        voPage.setPages(resultPage.getPages());
+
+        List<GroupBuyVo> voList = resultPage.getRecords().stream()
+                .map(this::buildGroupBuyVo)
+                .collect(Collectors.toList());
+        voPage.setRecords(voList);
+
+        log.info("查询到 {} 条拼团记录", resultPage.getTotal());
+
+        return voPage;
     }
 }

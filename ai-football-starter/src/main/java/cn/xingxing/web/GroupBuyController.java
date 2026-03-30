@@ -4,7 +4,9 @@ import cn.xingxing.dto.ApiResponse;
 import cn.xingxing.dto.groupbuy.CreateGroupBuyDto;
 import cn.xingxing.dto.groupbuy.GroupBuyVo;
 import cn.xingxing.dto.groupbuy.JoinGroupBuyDto;
+import cn.xingxing.dto.groupbuy.MyGroupBuyQueryDto;
 import cn.xingxing.service.GroupBuyService;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -56,6 +58,19 @@ public class GroupBuyController {
     public ApiResponse<GroupBuyVo> getGroupBuyDetail(@PathVariable String groupId) {
         log.info("查询拼团详情: groupId={}", groupId);
         GroupBuyVo result = groupBuyService.getGroupBuyDetail(groupId);
+        return ApiResponse.success(result);
+    }
+
+    /**
+     * 查询我的拼团列表（分页）
+     * @param queryDto 查询条件
+     * @return 分页结果
+     */
+    @PostMapping("/my/list")
+    public ApiResponse<Page<GroupBuyVo>> getMyGroupBuyList(@RequestBody MyGroupBuyQueryDto queryDto) {
+        log.info("查询我的拼团列表: userId={}, status={}, pageNum={}, pageSize={}",
+                queryDto.getUserId(), queryDto.getStatus(), queryDto.getPageNum(), queryDto.getPageSize());
+        Page<GroupBuyVo> result = groupBuyService.getMyGroupBuyList(queryDto);
         return ApiResponse.success(result);
     }
 }
