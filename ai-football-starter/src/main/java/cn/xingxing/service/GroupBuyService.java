@@ -1,5 +1,6 @@
 package cn.xingxing.service;
 
+import cn.xingxing.dto.groupbuy.ClaimRewardDto;
 import cn.xingxing.dto.groupbuy.CreateGroupBuyDto;
 import cn.xingxing.dto.groupbuy.GroupBuyVo;
 import cn.xingxing.dto.groupbuy.JoinGroupBuyDto;
@@ -41,4 +42,11 @@ public interface GroupBuyService {
      * @return 分页结果
      */
     Page<GroupBuyVo> getMyGroupBuyList(MyGroupBuyQueryDto queryDto);
+
+    /**
+     * 团长领取积分奖励
+     * @param claimDto 领取请求
+     * @return 是否成功
+     */
+    Boolean claimReward(ClaimRewardDto claimDto);
 }

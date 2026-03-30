@@ -1,6 +1,7 @@
 package cn.xingxing.web;
 
 import cn.xingxing.dto.ApiResponse;
+import cn.xingxing.dto.groupbuy.ClaimRewardDto;
 import cn.xingxing.dto.groupbuy.CreateGroupBuyDto;
 import cn.xingxing.dto.groupbuy.GroupBuyVo;
 import cn.xingxing.dto.groupbuy.JoinGroupBuyDto;
@@ -71,6 +72,18 @@ public class GroupBuyController {
         log.info("查询我的拼团列表: userId={}, status={}, pageNum={}, pageSize={}",
                 queryDto.getUserId(), queryDto.getStatus(), queryDto.getPageNum(), queryDto.getPageSize());
         Page<GroupBuyVo> result = groupBuyService.getMyGroupBuyList(queryDto);
+        return ApiResponse.success(result);
+    }
+
+    /**
+     * 团长领取积分奖励
+     * @param claimDto 领取请求
+     * @return 是否成功
+     */
+    @PostMapping("/claim/reward")
+    public ApiResponse<Boolean> claimReward(@RequestBody ClaimRewardDto claimDto) {
+        log.info("团长领取积分: groupId={}, userId={}", claimDto.getGroupId(), claimDto.getUserId());
+        Boolean result = groupBuyService.claimReward(claimDto);
         return ApiResponse.success(result);
     }
 }

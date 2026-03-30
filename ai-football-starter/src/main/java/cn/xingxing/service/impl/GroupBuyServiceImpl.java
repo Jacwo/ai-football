@@ -85,7 +85,7 @@ public class GroupBuyServiceImpl extends ServiceImpl<GroupBuyMapper, GroupBuy> i
                 .groupSize(groupSize)
                 .currentSize(1)
                 .status(0)  // 0-进行中
-                .expireTime(LocalDateTime.now().plusHours(2))  // 2小时后过期
+                .expireTime(LocalDateTime.now().plusHours(12))  // 12小时后过期
                 .rewardDistributed(0)
                 .build();
 
@@ -191,10 +191,7 @@ public class GroupBuyServiceImpl extends ServiceImpl<GroupBuyMapper, GroupBuy> i
         if (groupBuy.getCurrentSize() >= groupBuy.getGroupSize()) {
             groupBuy.setStatus(1);  // 1-成功
             groupBuy.setSuccessTime(LocalDateTime.now());
-            log.info("拼团成功，开始发放积分奖励");
-
-            // 发放积分奖励
-            distributeRewards(groupBuy);
+            log.info("拼团成功，等待团长领取积分奖励");
         }
 
         groupBuyMapper.updateById(groupBuy);
@@ -246,7 +243,7 @@ public class GroupBuyServiceImpl extends ServiceImpl<GroupBuyMapper, GroupBuy> i
             log.info("-- SQL: SELECT * FROM user WHERE id = '{}' AND deleted = 0", member.getUserId());
 
             Long pointBefore = user.getPoint();
-            Long pointReward = member.getIsLeader() == 1 ? 5L : 2L;  // 团长5分，团员2分
+            Long pointReward = member.getIsLeader() == 1 ? groupBuy.getGroupSize() : 2L;  // 团长5分，团员2分
             Long pointAfter = pointBefore + pointReward;
 
             // 更新用户积分
@@ -406,5 +403,53 @@ public class GroupBuyServiceImpl extends ServiceImpl<GroupBuyMapper, GroupBuy> i
         log.info("查询到 {} 条拼团记录", resultPage.getTotal());
 
         return voPage;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean claimReward(ClaimRewardDto claimDto) {
+        String groupId = claimDto.getGroupId();
+        String userId = claimDto.getUserId();
+
+        log.info("团长 {} 领取拼团 {} 的积分奖励", userId, groupId);
+
+        // 查询拼团信息
+        GroupBuy groupBuy = groupBuyMapper.selectById(groupId);
+        log.info("-- SQL: SELECT * FROM group_buy WHERE id = '{}' AND deleted = 0", groupId);
+
+        if (groupBuy == null) {
+            log.error("拼团不存在: {}", groupId);
+            throw new CommonException(10004, "拼团不存在");
+        }
+
+        // 验证是否为团长
+        if (!groupBuy.getLeaderId().equals(userId)) {
+            log.error("用户 {} 不是拼团 {} 的团长", userId, groupId);
+            throw new CommonException(10009, "只有团长才能领取积分奖励");
+        }
+
+        // 检查拼团状态是否为成功
+        if (groupBuy.getStatus() != 1) {
+            log.error("拼团状态不是成功: groupId={}, status={}", groupId, groupBuy.getStatus());
+            throw new CommonException(10010, "拼团未成功，无法领取奖励");
+        }
+
+        // 检查积分是否已发放
+        if (groupBuy.getRewardDistributed() == 1) {
+            log.error("拼团 {} 积分已领取", groupId);
+            throw new CommonException(10011, "积分已领取，请勿重复领取");
+        }
+
+        // 发放积分奖励
+        distributeRewards(groupBuy);
+
+        // 标记积分已发放
+        groupBuy.setRewardDistributed(1);
+        groupBuyMapper.updateById(groupBuy);
+        log.info("-- SQL: UPDATE group_buy SET reward_distributed = 1 WHERE id = '{}' AND deleted = 0", groupId);
+
+        log.info("团长 {} 成功领取拼团 {} 的积分奖励", userId, groupId);
+
+        return true;
     }
 }
