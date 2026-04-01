@@ -80,7 +80,7 @@ public class LiveController {
             );
 
             log.info("成功查询到 {} 场比赛的直播信息", liveMatches != null ? liveMatches.size() : 0);
-            return ApiResponse.success(liveMatches != null ? liveMatches : Collections.emptyList());
+            return ApiResponse.success(liveMatches != null ? liveMatches.stream().filter(f->matchIdsStr.contains(f.getMatchId().toString())).toList() : Collections.emptyList());
 
         } catch (Exception e) {
             log.error("查询直播信息异常", e);
