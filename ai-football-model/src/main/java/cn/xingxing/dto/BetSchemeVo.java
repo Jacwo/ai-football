@@ -152,6 +152,11 @@ public class BetSchemeVo {
          */
         private Integer isHit;
 
+        /**
+         * 是否选中
+         */
+        private Boolean checked;
+
 
         /**
          * 比赛开奖结果(根据option_type存储对应玩法的结果)

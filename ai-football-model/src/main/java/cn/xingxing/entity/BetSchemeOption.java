@@ -57,6 +57,11 @@ public class BetSchemeOption extends BaseEntity {
     private String optionValue;
 
     /**
+     * 是否选中
+     */
+    private Boolean checked;
+
+    /**
      * 赔率
      */
     private BigDecimal odds;

@@ -85,5 +85,9 @@ public class BetSchemeSaveDto {
          * 赔率
          */
         private Double odds;
+        /**
+         * 是否选中
+         */
+        private Boolean checked;
     }
 }

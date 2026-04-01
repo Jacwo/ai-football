@@ -94,6 +94,7 @@ public class BetSchemeServiceImpl extends ServiceImpl<BetSchemeMapper, BetScheme
                         .schemeId(schemeId)
                         .matchId(selection.getMatchId())
                         .optionType(option.getType())
+                        .checked(option.getChecked())
                         .optionValue(option.getValue())
                         .odds(BigDecimal.valueOf(option.getOdds()))
                         .build();
@@ -210,6 +211,7 @@ public class BetSchemeServiceImpl extends ServiceImpl<BetSchemeMapper, BetScheme
                                 .optionTypeDesc(getOptionTypeDesc(option.getOptionType()))
                                 .optionValue(option.getOptionValue())
                                 .odds(option.getOdds())
+                                .checked(option.getChecked())
                                 .matchResult(option.getMatchResult())
                                 .matchResultDesc(option.getMatchResultDesc())
                                 .checkTime(option.getCheckTime())
