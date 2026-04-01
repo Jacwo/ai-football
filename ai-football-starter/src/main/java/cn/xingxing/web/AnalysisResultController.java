@@ -23,7 +23,7 @@ public class AnalysisResultController {
     private AiAnalysisResultService aiAnalysisResultService;
     @PostMapping("/history/list")
     public ApiResponse<PageVO<AiAnalysisResult>> matchInfoHistoryList(@RequestBody AnalysisPageDTO analysisPageDTO) {
-        PageVO<AiAnalysisResult> historyList =aiAnalysisResultService.matchInfoHistoryList(analysisPageDTO);
+        PageVO<AiAnalysisResult> historyList = aiAnalysisResultService.matchInfoHistoryList(analysisPageDTO);
         return ApiResponse.success(historyList);
     }
 

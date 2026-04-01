@@ -57,7 +57,8 @@ public class MatchInfoServiceImpl extends ServiceImpl<MatchInfoMapper, SubMatchI
         List<SubMatchInfo> subMatchInfos = matchInfoMapper.selectList(queryWrapper);
         List<SubMatchInfo> list = subMatchInfos.stream().filter(f -> {
             LocalDateTime localDateTime = parseMatchTime(f.getMatchDate(), f.getMatchTime());
-            return localDateTime.isAfter(LocalDateTime.now());
+            LocalDateTime todayAt11 = LocalDateTime.now().withHour(11).withMinute(0).withSecond(0).withNano(0);
+            return localDateTime.isAfter(LocalDateTime.now()) && localDateTime.isAfter(todayAt11);
         }).toList();
         List<MatchInfoVo> matchInfoVos = JSONObject.parseArray(JSONObject.toJSONString(list), MatchInfoVo.class);
         matchInfoVos.forEach(m->{
