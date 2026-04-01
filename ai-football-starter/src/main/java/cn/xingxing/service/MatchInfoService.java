@@ -22,4 +22,6 @@ public interface MatchInfoService extends IService<SubMatchInfo> {
     MatchInfoVo findMatchById(String matchId);
 
     List<MatchCalculator> getMatchCalculator();
+
+    List<Integer> getUnfinishedMatchIds();
 }

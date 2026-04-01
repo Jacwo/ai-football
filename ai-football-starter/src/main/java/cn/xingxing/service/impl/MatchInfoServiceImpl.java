@@ -106,6 +106,16 @@ public class MatchInfoServiceImpl extends ServiceImpl<MatchInfoMapper, SubMatchI
 
 
 
+    @Override
+    public List<Integer> getUnfinishedMatchIds() {
+        LambdaQueryWrapper<SubMatchInfo> queryWrapper = new LambdaQueryWrapper<>();
+        // 查询状态为进行中、未开播、直播中、直播结束但未完成的比赛
+        // matchStatus: 2-未开售，3-暂停销售，4-未开播，5-直播中，6-直播结束，11-已完成
+        queryWrapper.in(SubMatchInfo::getMatchStatus, "2", "3", "4", "5", "6");
+        List<SubMatchInfo> subMatchInfos = matchInfoMapper.selectList(queryWrapper);
+        return subMatchInfos.stream().map(SubMatchInfo::getMatchId).toList();
+    }
+
     private LocalDateTime parseMatchTime(String date, String time) {
         try {
             String dateTimeStr = date + " " + time;
