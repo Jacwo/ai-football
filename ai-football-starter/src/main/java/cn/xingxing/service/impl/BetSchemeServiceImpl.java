@@ -6,6 +6,7 @@ import cn.xingxing.dto.BetSchemeVo;
 import cn.xingxing.entity.*;
 import cn.xingxing.mapper.*;
 import cn.xingxing.service.BetSchemeService;
+import cn.xingxing.service.MatchInfoService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 
 /**
  * 投注方案服务实现类
+ *
  * @Author: yangyuanliang
  * @Date: 2026-03-24
  * @Version: 1.0
@@ -43,6 +45,8 @@ public class BetSchemeServiceImpl extends ServiceImpl<BetSchemeMapper, BetScheme
 
     @Autowired
     private UserMapper userMapper;
+    @Autowired
+    private MatchInfoService matchInfoService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -110,7 +114,7 @@ public class BetSchemeServiceImpl extends ServiceImpl<BetSchemeMapper, BetScheme
     public List<BetSchemeVo> getUserSchemes(String userId) {
         // 查询用户的方案列表
         LambdaQueryWrapper<BetScheme> wrapper = new LambdaQueryWrapper<>();
-        wrapper.and(item->item.eq(BetScheme::getUserId, userId).or().eq(BetScheme::getId,userId))
+        wrapper.and(item -> item.eq(BetScheme::getUserId, userId).or().eq(BetScheme::getId, userId))
                 .orderByDesc(BetScheme::getCreateTime);
         List<BetScheme> betSchemes = betSchemeMapper.selectList(wrapper);
         return processBetSchemes(betSchemes);
@@ -148,10 +152,30 @@ public class BetSchemeServiceImpl extends ServiceImpl<BetSchemeMapper, BetScheme
         Long schemeId = Long.parseLong(id);
         BetScheme byId = this.getById(schemeId);
 
-        if(byId!=null){
-            if(byId.getRecommend()==1){
-                throw new CommonException(10007,"不能重复推荐");
+        if (byId != null) {
+            if (byId.getRecommend() == 1) {
+                throw new CommonException(10007, "不能重复推荐");
             }
+
+            // 检查方案中的比赛是否已开始
+            LambdaQueryWrapper<BetSchemeDetail> detailWrapper = new LambdaQueryWrapper<>();
+            detailWrapper.eq(BetSchemeDetail::getSchemeId, schemeId);
+            List<BetSchemeDetail> details = betSchemeDetailMapper.selectList(detailWrapper);
+
+            LocalDateTime now = LocalDateTime.now();
+            for (BetSchemeDetail detail : details) {
+                SubMatchInfo matchInfo = matchInfoService.getById(detail.getMatchId());
+                LocalDateTime matchTime;
+                if (matchInfo != null) {
+
+                    matchTime = LocalDateTime.parse(matchInfo.getMatchDate()+"T" + matchInfo.getMatchTime());
+                    if (detail.getMatchTime() != null && matchTime.isBefore(now)) {
+                        throw new CommonException(10008, "推荐失败，比赛已开始");
+                    }
+                }
+            }
+
+
             byId.setRecommend(1);
             this.updateById(byId);
         }
@@ -160,9 +184,11 @@ public class BetSchemeServiceImpl extends ServiceImpl<BetSchemeMapper, BetScheme
 
     @Override
     public List<BetSchemeVo> listSchemes() {
-        // 查询用户的方案列表
+        // 查询用户的方案列表（最近7天）
+        LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
         LambdaQueryWrapper<BetScheme> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(BetScheme::getRecommend, 1)
+                .ge(BetScheme::getCreateTime, sevenDaysAgo)
                 .orderByDesc(BetScheme::getCreateTime);
         List<BetScheme> betSchemes = betSchemeMapper.selectList(wrapper);
         return processBetSchemes(betSchemes);
@@ -182,7 +208,7 @@ public class BetSchemeServiceImpl extends ServiceImpl<BetSchemeMapper, BetScheme
             BetSchemeVo vo = BetSchemeVo.builder()
                     .id(betScheme.getId())
                     .userId(userId)
-                    .userName(user!=null? user.getUserName():"")
+                    .userName(user != null ? user.getUserName() : "")
                     .schemeNo(betScheme.getSchemeNo())
                     .passTypes(Arrays.asList(betScheme.getPassTypes().split(",")))
                     .multiple(betScheme.getMultiple())
@@ -240,6 +266,7 @@ public class BetSchemeServiceImpl extends ServiceImpl<BetSchemeMapper, BetScheme
 
     /**
      * 生成方案编号
+     *
      * @param userId 用户ID
      * @return 方案编号
      */
@@ -254,6 +281,7 @@ public class BetSchemeServiceImpl extends ServiceImpl<BetSchemeMapper, BetScheme
 
     /**
      * 获取状态描述
+     *
      * @param status 状态码
      * @return 状态描述
      */
@@ -277,6 +305,7 @@ public class BetSchemeServiceImpl extends ServiceImpl<BetSchemeMapper, BetScheme
 
     /**
      * 获取选项类型描述
+     *
      * @param optionType 选项类型
      * @return 选项类型描述
      */
