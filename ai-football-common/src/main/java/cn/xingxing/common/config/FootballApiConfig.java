@@ -790,7 +790,7 @@ public class FootballApiConfig {
      */
 
     private String liveUrl = "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchLiveV1.qry?matchIds=%s&eventTc=goals,penalty_shootout&method=live";
-
+    private String rizhi = "https://webapi.sporttery.cn/gateway/uniform/football/league/getTablesV1.qry?uniformLeagueId=2279&seasonId=14305";
     private String matchCalculatorUrl= "https://webapi.sporttery.cn/gateway/uniform/football/getMatchCalculatorV1.qry?channel=c";
     //比赛特征
     private String matchFeatureUrl= "https://webapi.sporttery.cn/gateway/uniform/football/getMatchFeatureV1.qry?termLimits=10&sportteryMatchId=%s";

@@ -718,6 +718,8 @@ public class DataServiceImpl implements DataService {
             // 查询该比赛相关的所有投注选项
             LambdaQueryWrapper<BetSchemeOption> queryWrapper = new LambdaQueryWrapper<>();
             queryWrapper.eq(BetSchemeOption::getMatchId, matchId);
+            queryWrapper.eq(BetSchemeOption::getChecked, true);
+
             List<BetSchemeOption> betSchemeOptions = betSchemeOptionMapper.selectList(queryWrapper);
 
             if (CollectionUtils.isEmpty(betSchemeOptions)) {
