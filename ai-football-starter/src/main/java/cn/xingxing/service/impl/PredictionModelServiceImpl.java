@@ -99,21 +99,21 @@ public class PredictionModelServiceImpl extends ServiceImpl<PredictionModelMappe
 
                 // 统计各类预测
                 switch (aiResult.trim()) {
-                    case "胜":
+                    case "主胜":
                         homeWinCount++;
                         if (aiResult.trim().equals(actualResult)) {
                             homeWinCorrect++;
                             correctPredictions++;
                         }
                         break;
-                    case "平":
+                    case "平局":
                         drawCount++;
                         if (aiResult.trim().equals(actualResult)) {
                             drawCorrect++;
                             correctPredictions++;
                         }
                         break;
-                    case "负":
+                    case "客胜":
                         awayWinCount++;
                         if (aiResult.trim().equals(actualResult)) {
                             awayWinCorrect++;
@@ -282,11 +282,11 @@ public class PredictionModelServiceImpl extends ServiceImpl<PredictionModelMappe
             int awayScore = Integer.parseInt(scores[1].trim());
 
             if (homeScore > awayScore) {
-                return "胜";
+                return "主胜";
             } else if (homeScore == awayScore) {
-                return "平";
+                return "平局";
             } else {
-                return "负";
+                return "客胜";
             }
         } catch (Exception e) {
             log.error("解析比赛结果失败: {}", matchResult, e);
