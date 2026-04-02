@@ -48,7 +48,7 @@ public class PredictionModelStats extends BaseEntity {
     private LocalDateTime statsDate;
 
     /**
-     * 样本数量 (默认近100场)
+     * 样本数量
      */
     private Integer sampleSize;
 
@@ -96,26 +96,6 @@ public class PredictionModelStats extends BaseEntity {
      * 客胜预测正确数
      */
     private Integer awayWinCorrect;
-
-    /**
-     * 近10场准确率
-     */
-    private BigDecimal recent10Accuracy;
-
-    /**
-     * 近20场准确率
-     */
-    private BigDecimal recent20Accuracy;
-
-    /**
-     * 近50场准确率
-     */
-    private BigDecimal recent50Accuracy;
-
-    /**
-     * 分联赛统计 JSON格式
-     */
-    private String leagueStats;
 
     /**
      * 更新时间

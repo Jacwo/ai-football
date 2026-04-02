@@ -7,7 +7,6 @@ import org.apache.ibatis.annotations.Select;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 /**
  * AI预测模型统计Mapper
@@ -33,12 +32,6 @@ public interface PredictionModelStatsMapper extends BaseMapper<PredictionModelSt
     PredictionModelStats selectLatestByModelName(@Param("modelName") String modelName);
 
     /**
-     * 查询所有模型的最新统计
-     */
-    @Select("SELECT * FROM v_latest_model_accuracy ORDER BY model_type, model_name")
-    List<Map<String, Object>> selectAllLatestStats();
-
-    /**
      * 查询模型的历史统计数据
      */
     @Select("SELECT * FROM prediction_model_stats WHERE model_id = #{modelId} " +
@@ -59,16 +52,4 @@ public interface PredictionModelStatsMapper extends BaseMapper<PredictionModelSt
             "  GROUP BY model_name" +
             ") ORDER BY model_name")
     List<PredictionModelStats> selectLatestByModelType(@Param("modelType") String modelType);
-
-    /**
-     * 执行胜负模型准确率计算
-     */
-    @Select("CALL calculate_result_model_accuracy()")
-    void calculateResultModelAccuracy();
-
-    /**
-     * 执行比分模型准确率计算
-     */
-    @Select("CALL calculate_score_model_accuracy()")
-    void calculateScoreModelAccuracy();
 }

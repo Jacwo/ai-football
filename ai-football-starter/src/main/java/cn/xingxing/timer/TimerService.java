@@ -97,7 +97,7 @@ public class TimerService{
     @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:50000}", fixedDelayString = "${football.api.schedule-fixed-delay:28800000}")
     public void calculateDailyStats() {
         log.info("开始每日模型统计...");
-        predictionModelService.calculateAllModelsAccuracy();
+        predictionModelService.calculateAllModelsAccuracy(50);
         log.info("每日模型统计完成");
     }
 

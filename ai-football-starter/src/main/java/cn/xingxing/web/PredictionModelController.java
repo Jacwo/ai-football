@@ -10,7 +10,6 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -49,11 +48,13 @@ public class PredictionModelController {
 
     /**
      * 执行胜负模型准确率计算
+     * @param sampleSize 样本数量（可选，默认30场）
      */
     @PostMapping("/calculate/result")
-    public ApiResponse<String> calculateResultModelAccuracy() {
+    public ApiResponse<String> calculateResultModelAccuracy(
+            @RequestParam(required = false, defaultValue = "30") Integer sampleSize) {
         try {
-            predictionModelService.calculateResultModelAccuracy();
+            predictionModelService.calculateResultModelAccuracy(sampleSize);
             return ApiResponse.success("胜负模型准确率计算成功");
         } catch (Exception e) {
             log.error("胜负模型准确率计算失败", e);
@@ -63,11 +64,13 @@ public class PredictionModelController {
 
     /**
      * 执行比分模型准确率计算
+     * @param sampleSize 样本数量（可选，默认30场）
      */
     @PostMapping("/calculate/score")
-    public ApiResponse<String> calculateScoreModelAccuracy() {
+    public ApiResponse<String> calculateScoreModelAccuracy(
+            @RequestParam(required = false, defaultValue = "30") Integer sampleSize) {
         try {
-            predictionModelService.calculateScoreModelAccuracy();
+            predictionModelService.calculateScoreModelAccuracy(sampleSize);
             return ApiResponse.success("比分模型准确率计算成功");
         } catch (Exception e) {
             log.error("比分模型准确率计算失败", e);
@@ -77,11 +80,13 @@ public class PredictionModelController {
 
     /**
      * 执行所有模型准确率计算
+     * @param sampleSize 样本数量（可选，默认30场）
      */
     @PostMapping("/calculate/all")
-    public ApiResponse<String> calculateAllModelsAccuracy() {
+    public ApiResponse<String> calculateAllModelsAccuracy(
+            @RequestParam(required = false, defaultValue = "30") Integer sampleSize) {
         try {
-            predictionModelService.calculateAllModelsAccuracy();
+            predictionModelService.calculateAllModelsAccuracy(sampleSize);
             return ApiResponse.success("所有模型准确率计算成功");
         } catch (Exception e) {
             log.error("所有模型准确率计算失败", e);
@@ -126,48 +131,5 @@ public class PredictionModelController {
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime endDate) {
         List<PredictionModelStats> stats = predictionModelService.getHistoryStats(modelId, startDate, endDate);
         return ApiResponse.success(stats);
-    }
-
-    /**
-     * 查询模型统计汇总（包含胜负模型和比分模型的最新准确率）
-     */
-    @GetMapping("/stats/summary")
-    public ApiResponse<Map<String, Object>> getStatsSummary() {
-        Map<String, Object> summary = new HashMap<>();
-
-        // 获取胜负模型统计
-        PredictionModelStats resultStats = predictionModelService.getLatestStatsByName("胜负模型v1");
-        if (resultStats != null) {
-            Map<String, Object> resultData = new HashMap<>();
-            resultData.put("modelName", resultStats.getModelName());
-            resultData.put("totalPredictions", resultStats.getTotalPredictions());
-            resultData.put("correctPredictions", resultStats.getCorrectPredictions());
-            resultData.put("accuracyRate", resultStats.getAccuracyRate());
-            resultData.put("recent10Accuracy", resultStats.getRecent10Accuracy());
-            resultData.put("recent20Accuracy", resultStats.getRecent20Accuracy());
-            resultData.put("recent50Accuracy", resultStats.getRecent50Accuracy());
-            resultData.put("homeWin", String.format("%d/%d", resultStats.getHomeWinCorrect(), resultStats.getHomeWinCount()));
-            resultData.put("draw", String.format("%d/%d", resultStats.getDrawCorrect(), resultStats.getDrawCount()));
-            resultData.put("awayWin", String.format("%d/%d", resultStats.getAwayWinCorrect(), resultStats.getAwayWinCount()));
-            resultData.put("statsDate", resultStats.getStatsDate());
-            summary.put("resultModel", resultData);
-        }
-
-        // 获取比分模型统计
-        PredictionModelStats scoreStats = predictionModelService.getLatestStatsByName("比分模型v1");
-        if (scoreStats != null) {
-            Map<String, Object> scoreData = new HashMap<>();
-            scoreData.put("modelName", scoreStats.getModelName());
-            scoreData.put("totalPredictions", scoreStats.getTotalPredictions());
-            scoreData.put("correctPredictions", scoreStats.getCorrectPredictions());
-            scoreData.put("accuracyRate", scoreStats.getAccuracyRate());
-            scoreData.put("recent10Accuracy", scoreStats.getRecent10Accuracy());
-            scoreData.put("recent20Accuracy", scoreStats.getRecent20Accuracy());
-            scoreData.put("recent50Accuracy", scoreStats.getRecent50Accuracy());
-            scoreData.put("statsDate", scoreStats.getStatsDate());
-            summary.put("scoreModel", scoreData);
-        }
-
-        return ApiResponse.success(summary);
     }
 }

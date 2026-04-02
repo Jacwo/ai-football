@@ -34,18 +34,21 @@ public interface PredictionModelService extends IService<PredictionModel> {
 
     /**
      * 执行胜负模型准确率计算
+     * @param sampleSize 样本数量（默认30场）
      */
-    void calculateResultModelAccuracy();
+    void calculateResultModelAccuracy(Integer sampleSize);
 
     /**
      * 执行比分模型准确率计算
+     * @param sampleSize 样本数量（默认30场）
      */
-    void calculateScoreModelAccuracy();
+    void calculateScoreModelAccuracy(Integer sampleSize);
 
     /**
      * 执行所有模型准确率计算
+     * @param sampleSize 样本数量（默认30场）
      */
-    void calculateAllModelsAccuracy();
+    void calculateAllModelsAccuracy(Integer sampleSize);
 
     /**
      * 查询模型的最新统计数据
