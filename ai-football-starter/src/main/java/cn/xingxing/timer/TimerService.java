@@ -102,7 +102,7 @@ public class TimerService{
     }
 
 
-    @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:24000}", fixedDelayString = "${football.api.schedule-fixed-delay:28800000}")
+    @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:480000}", fixedDelayString = "${football.api.schedule-fixed-delay:28800000}")
     public void syncXgData() {
         log.info("定时同步Xg信息启动");
 
