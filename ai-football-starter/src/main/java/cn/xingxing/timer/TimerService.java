@@ -5,6 +5,7 @@ import cn.xingxing.data.DataService;
 import cn.xingxing.data.TeamStatsService;
 import cn.xingxing.data.util.EPLDataGenerator;
 import cn.xingxing.service.FootballAnalysisService;
+import cn.xingxing.service.PredictionModelService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -37,6 +38,9 @@ public class TimerService{
 
     @Autowired
     private FootballAnalysisService analysisService;
+
+    @Autowired
+    private PredictionModelService predictionModelService;
     /**
      * 定时分析任务（每4小时执行一次）
      */
@@ -87,6 +91,14 @@ public class TimerService{
     public void syncHistoryData() {
         log.info("定时同步历史交锋");
         dataService.syncHistoryData();
+    }
+
+
+    @Scheduled(initialDelayString = "${football.api.schedule-initial-delay:50000}", fixedDelayString = "${football.api.schedule-fixed-delay:28800000}")
+    public void calculateDailyStats() {
+        log.info("开始每日模型统计...");
+        predictionModelService.calculateAllModelsAccuracy();
+        log.info("每日模型统计完成");
     }
 
 
