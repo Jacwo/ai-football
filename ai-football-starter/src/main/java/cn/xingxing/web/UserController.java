@@ -80,4 +80,10 @@ public class UserController {
         return ApiResponse.success(userPointDetailService.getUserPointDetailList(queryDto));
     }
 
+
+    @PostMapping("/user/logout")
+    public ApiResponse<Boolean> logout() {
+        return ApiResponse.success(true);
+    }
+
 }
