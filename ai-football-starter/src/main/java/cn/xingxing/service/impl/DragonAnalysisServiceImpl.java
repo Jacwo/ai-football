@@ -85,8 +85,7 @@ public class DragonAnalysisServiceImpl implements DragonAnalysisService {
             // 查询赔率信息
             LambdaQueryWrapper<HadList> hadWrapper = new LambdaQueryWrapper<>();
             hadWrapper.eq(HadList::getMatchId, String.valueOf(matchId))
-                    .orderByDesc(HadList::getUpdateTime)
-                    .last("LIMIT 1");
+            .eq(HadList::getGoalLine,"").orderByDesc(HadList::getUpdateTime).last("LIMIT 1");
             HadList hadList = hadListMapper.selectOne(hadWrapper);
 
             if (hadList == null) {
